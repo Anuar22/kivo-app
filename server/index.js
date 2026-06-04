@@ -41,6 +41,40 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function requireRole(role) {
+  return (req, res, next) => {
+    if (req.session?.role !== role) {
+      return res.status(403).json({ error: `Only ${role}s can use this endpoint.` });
+    }
+    return next();
+  };
+}
+
+function cleanMenuItem(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    image: row.image,
+    price: Number(row.price),
+    available: row.available,
+  };
+}
+
+function cleanOrder(row) {
+  return {
+    id: row.public_id,
+    dbId: row.id,
+    vendor: row.vendor_name,
+    customer: row.customer_name,
+    items: row.items || [],
+    total: Number(row.total),
+    status: row.status,
+    time: row.time_label || "Just now",
+    live: row.status !== "Delivered" && row.status !== "Collected",
+  };
+}
+
 app.get("/api/health", async (_req, res) => {
   try {
     await query("select 1");
@@ -139,6 +173,189 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
 
   if (!result.rows[0]) return res.status(404).json({ error: "Account not found." });
   res.json({ user: cleanUser(result.rows[0]) });
+});
+
+app.get("/api/orders", requireAuth, requireRole("customer"), async (req, res) => {
+  const result = await query(
+    `
+      select
+        o.*,
+        coalesce(
+          json_agg(
+            json_build_object('name', oi.name, 'qty', oi.qty, 'price', oi.price::float)
+            order by oi.id
+          ) filter (where oi.id is not null),
+          '[]'::json
+        ) as items,
+        case
+          when o.created_at > now() - interval '1 minute' then 'Just now'
+          when o.created_at > now() - interval '1 hour' then floor(extract(epoch from now() - o.created_at) / 60)::int || ' mins ago'
+          else to_char(o.created_at, 'Mon DD')
+        end as time_label
+      from orders o
+      left join order_items oi on oi.order_id = o.id
+      where o.customer_user_id = $1
+      group by o.id
+      order by o.created_at desc
+    `,
+    [req.session.sub],
+  );
+
+  res.json(result.rows.map(cleanOrder));
+});
+
+app.post("/api/orders", requireAuth, requireRole("customer"), async (req, res) => {
+  const vendorName = String(req.body.vendorName || "").trim();
+  const address = String(req.body.address || "").trim();
+  const paymentMethod = String(req.body.paymentMethod || "cash").trim();
+  const items = Array.isArray(req.body.items) ? req.body.items : [];
+  const total = Number(req.body.total || 0);
+
+  if (!vendorName) return res.status(400).json({ error: "Choose a restaurant before ordering." });
+  if (address.length < 3) return res.status(400).json({ error: "Enter a delivery address." });
+  if (!items.length) return res.status(400).json({ error: "Add items before placing an order." });
+  if (!Number.isFinite(total) || total <= 0) return res.status(400).json({ error: "Order total is invalid." });
+  const cleanedItems = items
+    .map((item) => ({
+      name: String(item.name || "").trim(),
+      qty: Number(item.qty || 0),
+      price: Number(item.price || 0),
+    }))
+    .filter((item) => item.name && Number.isFinite(item.qty) && item.qty > 0 && Number.isFinite(item.price) && item.price >= 0);
+
+  if (!cleanedItems.length) return res.status(400).json({ error: "Order items are invalid." });
+
+  const result = await query(
+    `
+      insert into orders (customer_user_id, vendor_name, delivery_address, payment_method, total)
+      values ($1, $2, $3, $4, $5)
+      returning *
+    `,
+    [req.session.sub, vendorName, address, paymentMethod, total],
+  );
+
+  const order = result.rows[0];
+  for (const item of cleanedItems) {
+    await query(
+      "insert into order_items (order_id, name, qty, price) values ($1, $2, $3, $4)",
+      [order.id, item.name, item.qty, item.price],
+    );
+  }
+
+  res.status(201).json({ id: order.public_id });
+});
+
+app.get("/api/vendor/menu", requireAuth, requireRole("vendor"), async (req, res) => {
+  const result = await query(
+    "select * from menu_items where vendor_user_id = $1 order by created_at asc",
+    [req.session.sub],
+  );
+  res.json(result.rows.map(cleanMenuItem));
+});
+
+app.post("/api/vendor/menu", requireAuth, requireRole("vendor"), async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const description = String(req.body.description || "").trim();
+  const image = String(req.body.image || "🍽️").trim() || "🍽️";
+  const price = Number(req.body.price || 0);
+  const available = req.body.available !== false;
+
+  if (name.length < 2) return res.status(400).json({ error: "Enter an item name." });
+  if (!Number.isFinite(price) || price < 0) return res.status(400).json({ error: "Enter a valid price." });
+
+  const result = await query(
+    `
+      insert into menu_items (vendor_user_id, name, description, image, price, available)
+      values ($1, $2, $3, $4, $5, $6)
+      returning *
+    `,
+    [req.session.sub, name, description, image, price, available],
+  );
+
+  res.status(201).json(cleanMenuItem(result.rows[0]));
+});
+
+app.put("/api/vendor/menu/:id", requireAuth, requireRole("vendor"), async (req, res) => {
+  const name = String(req.body.name || "").trim();
+  const description = String(req.body.description || "").trim();
+  const image = String(req.body.image || "🍽️").trim() || "🍽️";
+  const price = Number(req.body.price || 0);
+  const available = req.body.available !== false;
+
+  if (name.length < 2) return res.status(400).json({ error: "Enter an item name." });
+  if (!Number.isFinite(price) || price < 0) return res.status(400).json({ error: "Enter a valid price." });
+
+  const result = await query(
+    `
+      update menu_items
+      set name = $3, description = $4, image = $5, price = $6, available = $7, updated_at = now()
+      where id = $1 and vendor_user_id = $2
+      returning *
+    `,
+    [req.params.id, req.session.sub, name, description, image, price, available],
+  );
+
+  if (!result.rows[0]) return res.status(404).json({ error: "Menu item not found." });
+  res.json(cleanMenuItem(result.rows[0]));
+});
+
+app.delete("/api/vendor/menu/:id", requireAuth, requireRole("vendor"), async (req, res) => {
+  await query("delete from menu_items where id = $1 and vendor_user_id = $2", [req.params.id, req.session.sub]);
+  res.status(204).end();
+});
+
+app.get("/api/vendor/orders", requireAuth, requireRole("vendor"), async (req, res) => {
+  const result = await query(
+    `
+      select
+        o.*,
+        u.name as customer_name,
+        coalesce(
+          json_agg(
+            json_build_object('name', oi.name, 'qty', oi.qty, 'price', oi.price::float)
+            order by oi.id
+          ) filter (where oi.id is not null),
+          '[]'::json
+        ) as items,
+        case
+          when o.created_at > now() - interval '1 minute' then 'Just now'
+          when o.created_at > now() - interval '1 hour' then floor(extract(epoch from now() - o.created_at) / 60)::int || ' mins ago'
+          else to_char(o.created_at, 'Mon DD')
+        end as time_label
+      from orders o
+      join users u on u.id = o.customer_user_id
+      where o.vendor_user_id = $1 or o.vendor_name = (
+        select business_name from vendor_profiles where user_id = $1
+      )
+      group by o.id, u.name
+      order by o.created_at desc
+    `,
+    [req.session.sub],
+  );
+
+  res.json(result.rows.map(cleanOrder));
+});
+
+app.patch("/api/vendor/orders/:id", requireAuth, requireRole("vendor"), async (req, res) => {
+  const status = String(req.body.status || "").trim();
+  const allowed = new Set(["Pending", "Cooking", "Ready", "Collected", "Delivered"]);
+  if (!allowed.has(status)) return res.status(400).json({ error: "Invalid order status." });
+
+  const result = await query(
+    `
+      update orders
+      set status = $3, updated_at = now()
+      where (id::text = $1 or public_id = $1)
+        and (vendor_user_id = $2 or vendor_name = (
+          select business_name from vendor_profiles where user_id = $2
+        ))
+      returning public_id
+    `,
+    [req.params.id, req.session.sub, status],
+  );
+
+  if (!result.rows[0]) return res.status(404).json({ error: "Order not found." });
+  res.json({ ok: true });
 });
 
 app.listen(PORT, () => {

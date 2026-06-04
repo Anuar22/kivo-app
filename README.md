@@ -1,16 +1,19 @@
-# React + Vite
+# Kivo App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Kivo is a mobile-first food ordering app with customer ordering flows, account auth, and a vendor dashboard for managing incoming orders and menu availability.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `npm run dev` - start the Vite client.
+- `npm run dev:api` - start the Express API.
+- `npm run db:migrate` - apply database migrations.
+- `npm run build` - build the client for production.
+- `npm run lint` - run ESLint.
 
-## React Compiler
+## Environment
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Copy `.env.example` to `.env` and set the database connection and JWT secret before running the API.
 
-## Expanding the ESLint configuration
+## App Shape
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The client lives in `src/`, the API lives in `server/`, and schema migrations live in `server/migrations/`.
