@@ -1,16 +1,17 @@
-import { useState } from "react";
-import { CartCtx } from "./cartStore.js";
+import { createContext, useContext, useState } from "react";
+
+const CartCtx = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [vendorId, setVendorId] = useState(null);
   const [vendorName, setVendorName] = useState("");
-  const [switchRequest, setSwitchRequest] = useState(null);
 
   const addItem = (item, vendor) => {
     if (vendorId && vendorId !== vendor.id) {
-      setSwitchRequest({ item, vendor, fromVendorName: vendorName });
-      return false;
+      if (!window.confirm(`Clear cart from ${vendorName} and add from ${vendor.name}?`)) return;
+      setItems([]);
+      setVendorId(null);
     }
     if (vendor.id) {
       setVendorId(vendor.id);
@@ -21,19 +22,7 @@ export function CartProvider({ children }) {
       if (ex) return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
       return [...prev, { ...item, qty: 1 }];
     });
-    return true;
   };
-
-  const confirmSwitch = () => {
-    if (!switchRequest) return;
-    const { item, vendor } = switchRequest;
-    setItems([{ ...item, qty: 1 }]);
-    setVendorId(vendor.id || null);
-    setVendorName(vendor.name || "");
-    setSwitchRequest(null);
-  };
-
-  const cancelSwitch = () => setSwitchRequest(null);
 
   const removeItem = (itemId) => {
     setItems(prev => {
@@ -56,21 +45,10 @@ export function CartProvider({ children }) {
   const getQty = (id) => items.find(i => i.id === id)?.qty || 0;
 
   return (
-    <CartCtx.Provider value={{
-      items,
-      addItem,
-      removeItem,
-      clearCart,
-      total,
-      count,
-      getQty,
-      vendorName,
-      vendorId,
-      switchRequest,
-      confirmSwitch,
-      cancelSwitch,
-    }}>
+    <CartCtx.Provider value={{ items, addItem, removeItem, clearCart, total, count, getQty, vendorName, vendorId }}>
       {children}
     </CartCtx.Provider>
   );
 }
+
+export const useCart = () => useContext(CartCtx);

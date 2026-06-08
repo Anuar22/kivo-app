@@ -1,17 +1,92 @@
-import pg from "pg";
+const { Pool } = require("pg");
 
-const { Pool } = pg;
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  host: process.env.PGHOST,
-  port: process.env.PGPORT ? Number(process.env.PGPORT) : undefined,
-  database: process.env.PGDATABASE,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-  ssl: process.env.PGSSL === "true" ? { rejectUnauthorized: false } : undefined,
+pool.on("error", (err) => {
+  console.error("Unexpected DB error:", err.message);
 });
 
-export async function query(text, params) {
-  return pool.query(text, params);
+// ─── SCHEMA MIGRATION ────────────────────────────────────────────────────────
+async function migrate() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id          SERIAL PRIMARY KEY,
+      name        TEXT NOT NULL,
+      email       TEXT UNIQUE NOT NULL,
+      phone       TEXT,
+      password    TEXT NOT NULL,
+      role        TEXT NOT NULL DEFAULT 'customer',   -- 'customer' | 'vendor'
+      business_name TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS vendors (
+      id            SERIAL PRIMARY KEY,
+      user_id       INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      name          TEXT NOT NULL,
+      category      TEXT,
+      description   TEXT,
+      image         TEXT DEFAULT '🍽️',
+      tag           TEXT,
+      tag_color     TEXT DEFAULT '#ff6b35',
+      rating        NUMERIC(3,1) DEFAULT 5.0,
+      review_count  INT DEFAULT 0,
+      distance      TEXT DEFAULT '1.0 km',
+      delivery_time TEXT DEFAULT '20–35 min',
+      delivery_fee  NUMERIC(6,2) DEFAULT 2.00,
+      is_open       BOOLEAN DEFAULT TRUE,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS menu_items (
+      id          SERIAL PRIMARY KEY,
+      vendor_id   INT REFERENCES vendors(id) ON DELETE CASCADE,
+      name        TEXT NOT NULL,
+      description TEXT,
+      price       NUMERIC(8,2) NOT NULL,
+      image       TEXT DEFAULT '🍽️',
+      popular     BOOLEAN DEFAULT FALSE,
+      available   BOOLEAN DEFAULT TRUE,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id            SERIAL PRIMARY KEY,
+      ref           TEXT UNIQUE NOT NULL,           -- e.g. KV-5041
+      customer_id   INT REFERENCES users(id),
+      vendor_id     INT REFERENCES vendors(id),
+      status        TEXT NOT NULL DEFAULT 'Pending', -- Pending|Accepted|Cooking|Ready|Delivered
+      address       TEXT,
+      payment_method TEXT DEFAULT 'cash',
+      subtotal      NUMERIC(8,2) NOT NULL,
+      delivery_fee  NUMERIC(6,2) NOT NULL DEFAULT 2.00,
+      total         NUMERIC(8,2) NOT NULL,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS order_items (
+      id          SERIAL PRIMARY KEY,
+      order_id    INT REFERENCES orders(id) ON DELETE CASCADE,
+      menu_item_id INT REFERENCES menu_items(id),
+      name        TEXT NOT NULL,   -- snapshot at order time
+      price       NUMERIC(8,2) NOT NULL,
+      qty         INT NOT NULL DEFAULT 1
+    );
+
+    -- Keep updated_at current automatically
+    CREATE OR REPLACE FUNCTION set_updated_at()
+    RETURNS TRIGGER AS $$
+    BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS orders_updated_at ON orders;
+    CREATE TRIGGER orders_updated_at
+      BEFORE UPDATE ON orders
+      FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+  `);
+
+  console.log("✅  DB schema ready");
 }
+
+module.exports = { pool, migrate };

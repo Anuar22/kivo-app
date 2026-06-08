@@ -1,59 +1,34 @@
 import { useState } from "react";
-import { API_BASE } from "../data/index.js";
-import { useCart } from "../context/useCart.js";
+import { useCart } from "../context/CartContext.jsx";
+import { ordersApi } from "../api/index.js";
 
 export default function Cart({ navigate }) {
-  const { items, addItem, removeItem, clearCart, total, vendorName } = useCart();
+  const { items, addItem, removeItem, clearCart, total, vendorName, vendorId } = useCart();
   const [address, setAddress] = useState("");
   const [payMethod, setPayMethod] = useState("cash");
   const [placed, setPlaced] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
   const deliveryFee = items.length > 0 ? 2.00 : 0;
   const grandTotal = total + deliveryFee;
 
   const placeOrder = async () => {
-    if (!address.trim()) {
-      setError("Please enter a delivery address.");
-      return;
-    }
-
+    if (!address.trim()) { setError("Please enter a delivery address."); return; }
     setError("");
-    setSubmitting(true);
+    setLoading(true);
     try {
-      const token = localStorage.getItem("kivo_token");
-      const response = await fetch(`${API_BASE}/api/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          vendorName,
-          address,
-          paymentMethod: payMethod,
-          items: items.map(item => ({
-            id: item.id,
-            name: item.name,
-            qty: item.qty,
-            price: item.price,
-          })),
-          total: grandTotal,
-        }),
+      await ordersApi.place({
+        vendorId,
+        address,
+        paymentMethod: payMethod,
+        items: items.map(i => ({ menuItemId: i.id, qty: i.qty })),
       });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Could not place order.");
-      }
-
       setPlaced(true);
       setTimeout(() => { clearCart(); navigate("orders"); }, 2600);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
+    } catch (e) {
+      setError(e.message);
+      setLoading(false);
     }
   };
 
@@ -82,9 +57,9 @@ export default function Cart({ navigate }) {
   );
 
   const paymentOptions = [
-    { id: "cash", label: "Cash on Delivery", icon: "💵" },
-    { id: "mobile", label: "Mobile Money", icon: "📱", disabled: true },
-    { id: "card", label: "Card Payment", icon: "💳", disabled: true },
+    { id: "cash",   label: "Cash on Delivery", icon: "💵" },
+    { id: "mobile", label: "Mobile Money",      icon: "📱", disabled: true },
+    { id: "card",   label: "Card Payment",      icon: "💳", disabled: true },
   ];
 
   return (
@@ -104,7 +79,7 @@ export default function Cart({ navigate }) {
             <div className="qty-control">
               <button onClick={() => removeItem(item.id)}>−</button>
               <span>{item.qty}</span>
-              <button onClick={() => addItem(item, { id: item.vendorId || null, name: vendorName })}>+</button>
+              <button onClick={() => addItem(item, { id: vendorId, name: vendorName })}>+</button>
             </div>
           </div>
         ))}
@@ -116,9 +91,8 @@ export default function Cart({ navigate }) {
           className="address-input"
           placeholder="Enter your delivery address..."
           value={address}
-          onChange={e => { setAddress(e.target.value); setError(""); }}
+          onChange={e => setAddress(e.target.value)}
         />
-        {error && <div className="cart-error">{error}</div>}
       </div>
 
       <div className="cart-section">
@@ -144,8 +118,14 @@ export default function Cart({ navigate }) {
         <div className="summary-row total-row"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
       </div>
 
-      <button className="btn-primary place-order-btn" onClick={placeOrder} disabled={submitting}>
-        {submitting ? "Placing order..." : `Place Order · $${grandTotal.toFixed(2)}`}
+      {error && (
+        <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#991b1b" }}>
+          {error}
+        </div>
+      )}
+
+      <button className="btn-primary place-order-btn" onClick={placeOrder} disabled={loading}>
+        {loading ? "Placing order..." : `Place Order · $${grandTotal.toFixed(2)}`}
       </button>
       <div style={{ height: 20 }} />
     </div>

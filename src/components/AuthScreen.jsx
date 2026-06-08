@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount } from "../context/useAccount.js";
+import { useAccount } from "../context/AccountContext.jsx";
 
 export default function AuthScreen() {
   const { login, register } = useAccount();

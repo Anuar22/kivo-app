@@ -1,4 +1,4 @@
-import { useCart } from "../context/useCart.js";
+import { useCart } from "../context/CartContext.jsx";
 
 export function Navbar({ screen, navigate }) {
   const { count } = useCart();

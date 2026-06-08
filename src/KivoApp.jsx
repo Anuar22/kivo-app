@@ -1,8 +1,6 @@
-import { useCallback, useState } from "react";
-import { AccountProvider } from "./context/AccountContext.jsx";
-import { useAccount } from "./context/useAccount.js";
+import { useState } from "react";
+import { AccountProvider, useAccount } from "./context/AccountContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
-import { useCart } from "./context/useCart.js";
 import CSS from "./styles/index.js";
 import AuthScreen from "./components/AuthScreen.jsx";
 import { Navbar, BottomNav } from "./components/Navigation.jsx";
@@ -14,18 +12,16 @@ import Profile from "./pages/Profile.jsx";
 import VendorDashboard from "./vendor/VendorDashboard.jsx";
 
 function KivoShell() {
-  const { user, initializing, logout } = useAccount();
-  const { switchRequest, confirmSwitch, cancelSwitch } = useCart();
+  const { user, initializing } = useAccount();
   const role = user?.role || "customer";
   const [screen, setScreen] = useState("home");
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [toast, setToast] = useState(null);
-  const [accountOpen, setAccountOpen] = useState(false);
 
-  const showToast = useCallback((msg) => {
+  const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
-  }, []);
+  };
 
   const navigate = (to, data = null) => {
     if (data) setSelectedVendor(data);
@@ -57,18 +53,7 @@ function KivoShell() {
       <div className="kivo-root">
         <div className="role-switcher">
           <span className="role-label">Signed in</span>
-          <div className="account-menu">
-            <button className="role-btn active" onClick={() => setAccountOpen(open => !open)}>
-              {role === "vendor" ? "🏪 Vendor" : "👤 Customer"}
-            </button>
-            {accountOpen && (
-              <div className="account-popover">
-                <p className="account-name">{user.businessName || user.name}</p>
-                <p className="account-email">{user.email}</p>
-                <button onClick={logout}>Sign out</button>
-              </div>
-            )}
-          </div>
+          <button className="role-btn active">{role === "vendor" ? "🏪 Vendor" : "👤 Customer"}</button>
         </div>
 
         {role === "customer" ? (
@@ -90,20 +75,6 @@ function KivoShell() {
         )}
 
         {toast && <div className="toast">{toast}</div>}
-        {switchRequest && (
-          <div className="modal-overlay" onClick={e => e.target === e.currentTarget && cancelSwitch()}>
-            <div className="confirm-sheet">
-              <h2>Start a new cart?</h2>
-              <p>
-                Your cart has items from {switchRequest.fromVendorName}. Clear it and add from {switchRequest.vendor.name}?
-              </p>
-              <div className="confirm-actions">
-                <button className="btn-secondary" onClick={cancelSwitch}>Keep cart</button>
-                <button className="btn-primary" onClick={confirmSwitch}>Clear and add</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

@@ -1,60 +1,41 @@
-import { useEffect, useState } from "react";
-import { AccountCtx } from "./accountStore.js";
-import { API_BASE } from "../data/index.js";
+import { createContext, useContext, useEffect, useState } from "react";
+import { authApi } from "../api/index.js";
 
-async function apiRequest(path, { method = "GET", body, token } = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Something went wrong.");
-  return data;
-}
+const AccountCtx = createContext(null);
 
 export function AccountProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem("kivo_token") || "");
-  const [initializing, setInitializing] = useState(Boolean(token));
+  const [initializing, setInitializing] = useState(true);
 
+  // Rehydrate session on mount
   useEffect(() => {
-    if (!token) return;
-    apiRequest("/api/auth/me", { token })
-      .then(({ user: freshUser }) => setUser(freshUser))
-      .catch(() => {
-        localStorage.removeItem("kivo_token");
-        setToken("");
-        setUser(null);
-      })
-      .finally(() => setInitializing(false));
-  }, [token]);
+    const token = localStorage.getItem("kivo_token");
+    if (!token) { setInitializing(false); return; }
 
-  const completeAuth = ({ user: authedUser, token: sessionToken }) => {
-    localStorage.setItem("kivo_token", sessionToken);
-    setToken(sessionToken);
-    setUser(authedUser);
+    authApi.me()
+      .then(({ user }) => setUser(user))
+      .catch(() => localStorage.removeItem("kivo_token"))
+      .finally(() => setInitializing(false));
+  }, []);
+
+  const completeAuth = ({ user, token }) => {
+    localStorage.setItem("kivo_token", token);
+    setUser(user);
   };
 
   const register = async (form) => {
-    const data = await apiRequest("/api/auth/register", { method: "POST", body: form });
+    const data = await authApi.register(form);
     completeAuth(data);
   };
 
   const login = async (form) => {
-    const data = await apiRequest("/api/auth/login", { method: "POST", body: form });
+    const data = await authApi.login(form);
     completeAuth(data);
   };
 
   const logout = () => {
     localStorage.removeItem("kivo_token");
-    setToken("");
     setUser(null);
-    setInitializing(false);
   };
 
   return (
@@ -63,3 +44,5 @@ export function AccountProvider({ children }) {
     </AccountCtx.Provider>
   );
 }
+
+export const useAccount = () => useContext(AccountCtx);
