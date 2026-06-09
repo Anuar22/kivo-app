@@ -1,6 +1,23 @@
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext.jsx";
-import { vendorsApi } from "../api/index.js";
+import { vendorsApi, apiRequest } from "../api/index.js";
+
+function StarRating({ value, onChange, size = 28 }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div style={{ display: "flex", gap: 4 }}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <span
+          key={n}
+          style={{ fontSize: size, cursor: onChange ? "pointer" : "default", opacity: n <= (hovered || value) ? 1 : 0.25, transition: "opacity 0.1s" }}
+          onMouseEnter={() => onChange && setHovered(n)}
+          onMouseLeave={() => onChange && setHovered(0)}
+          onClick={() => onChange && onChange(n)}
+        >⭐</span>
+      ))}
+    </div>
+  );
+}
 
 function MenuItem({ item, vendor, addItem, getQty, removeItem }) {
   const qty = getQty(item.id);
@@ -30,35 +47,106 @@ function MenuItem({ item, vendor, addItem, getQty, removeItem }) {
   );
 }
 
-export default function VendorPage({ vendor }) {
+function ReviewCard({ review }) {
+  const date = new Date(review.created_at);
+  const daysAgo = Math.floor((Date.now() - date) / 86400000);
+  const timeLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : daysAgo < 7 ? `${daysAgo} days ago` : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return (
+    <div className="review-card">
+      <div className="review-header">
+        <div className="review-avatar">{(review.customer_name || "A")[0].toUpperCase()}</div>
+        <div>
+          <p className="review-name">{review.customer_name || "Customer"}</p>
+          <p className="review-time">{timeLabel}</p>
+        </div>
+        <span className="review-rating">{"⭐".repeat(review.rating)}</span>
+      </div>
+      {review.comment && <p className="review-text">{review.comment}</p>}
+    </div>
+  );
+}
+
+function ReviewForm({ orderId, onDone }) {
+  const [rating, setRating]   = useState(0);
+  const [comment, setComment] = useState("");
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState("");
+
+  const submit = async () => {
+    if (!rating) { setError("Pick a star rating first."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      await apiRequest(`/api/orders/${orderId}/review`, { method: "POST", body: { rating, comment } });
+      onDone();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ background: "#fff8f5", border: "1.5px solid #ffe8da", borderRadius: 14, padding: 18, marginBottom: 16 }}>
+      <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#0f0f0f" }}>Leave a review</p>
+      <StarRating value={rating} onChange={setRating} />
+      <textarea
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        placeholder="Tell others about your experience (optional)"
+        rows={3}
+        style={{ width: "100%", marginTop: 12, padding: "10px 12px", borderRadius: 10, border: "1.5px solid #e8e4df", fontSize: 14, fontFamily: "DM Sans, sans-serif", resize: "none", outline: "none", boxSizing: "border-box" }}
+      />
+      {error && <p style={{ color: "#ef4444", fontSize: 12, marginTop: 6 }}>{error}</p>}
+      <button
+        onClick={submit}
+        disabled={saving}
+        style={{ marginTop: 10, background: "#ff6b35", border: "none", borderRadius: 10, padding: "10px 20px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+      >
+        {saving ? "Submitting…" : "Submit Review"}
+      </button>
+    </div>
+  );
+}
+
+export default function VendorPage({ vendor, deliveredOrderId }) {
   const { addItem, getQty, removeItem } = useCart();
-  const [tab, setTab]     = useState("menu");
-  const [menu, setMenu]   = useState(vendor?.menu || []);
-  const [loading, setLoading] = useState(!vendor?.menu);
+  const [tab, setTab]           = useState("menu");
+  const [menu, setMenu]         = useState(vendor?.menu || []);
+  const [menuLoading, setMenuLoading] = useState(!vendor?.menu);
+  const [reviews, setReviews]   = useState([]);
+  const [revTotal, setRevTotal] = useState(0);
+  const [revLoading, setRevLoading] = useState(false);
+  const [reviewed, setReviewed] = useState(false);
 
   useEffect(() => {
     if (!vendor) return;
-    // Fetch fresh menu from API
     vendorsApi.get(vendor.id)
       .then(({ menu }) => setMenu(menu))
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => setMenuLoading(false));
   }, [vendor?.id]);
+
+  const loadReviews = () => {
+    if (!vendor) return;
+    setRevLoading(true);
+    apiRequest(`/api/vendors/${vendor.id}/reviews`)
+      .then(({ reviews: list, total }) => { setReviews(list); setRevTotal(total); })
+      .catch(() => {})
+      .finally(() => setRevLoading(false));
+  };
+
+  useEffect(() => {
+    if (tab === "reviews") loadReviews();
+  }, [tab, vendor?.id]);
 
   if (!vendor) return null;
 
-  const popular = menu.filter(i => i.popular);
-
-  const SAMPLE_REVIEWS = [
-    { name: "John M.", rating: 5, text: "Absolutely amazing food! Always fresh and delivered hot.", time: "2 days ago" },
-    { name: "Amina K.", rating: 5, text: "Quick delivery and the food was still hot. Will order again!", time: "5 days ago" },
-    { name: "David O.", rating: 4, text: "Great flavors, portions could be bigger but overall great.", time: "1 week ago" },
-  ];
-
-  const tagColor = vendor.tag_color ?? vendor.tagColor ?? "#ff6b35";
-  const deliveryFee = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
+  const popular      = menu.filter(i => i.popular);
+  const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#ff6b35";
+  const deliveryFee  = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
   const deliveryTime = vendor.delivery_time ?? vendor.deliveryTime ?? "20–35 min";
-  const reviews = vendor.review_count ?? vendor.reviews ?? 0;
+  const reviewCount  = vendor.review_count ?? vendor.reviews ?? 0;
 
   return (
     <div className="page vendor-page">
@@ -69,7 +157,7 @@ export default function VendorPage({ vendor }) {
           <h2>{vendor.name}</h2>
           <p>{vendor.description}</p>
           <div className="vendor-hero-meta">
-            <span>⭐ {vendor.rating} ({reviews})</span>
+            <span>⭐ {vendor.rating} ({reviewCount})</span>
             <span>⏱ {deliveryTime}</span>
             <span>🛵 ${deliveryFee.toFixed(2)} delivery</span>
           </div>
@@ -79,14 +167,14 @@ export default function VendorPage({ vendor }) {
       <div className="vendor-tabs">
         {["menu", "reviews"].map(t => (
           <button key={t} className={`vtab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === "reviews" ? `Reviews${revTotal > 0 ? ` (${revTotal})` : ""}` : "Menu"}
           </button>
         ))}
       </div>
 
       {tab === "menu" && (
         <div className="menu-content">
-          {loading ? (
+          {menuLoading ? (
             <div className="empty-state"><p>Loading menu...</p></div>
           ) : (
             <>
@@ -115,19 +203,31 @@ export default function VendorPage({ vendor }) {
             <div className="reviews-score">{vendor.rating}</div>
             <div>
               <div className="reviews-stars">{"⭐".repeat(Math.round(Number(vendor.rating)))}</div>
-              <p>{reviews} reviews</p>
+              <p>{reviewCount} {reviewCount === 1 ? "review" : "reviews"}</p>
             </div>
           </div>
-          {SAMPLE_REVIEWS.map((r, i) => (
-            <div key={i} className="review-card">
-              <div className="review-header">
-                <div className="review-avatar">{r.name[0]}</div>
-                <div><p className="review-name">{r.name}</p><p className="review-time">{r.time}</p></div>
-                <span className="review-rating">{"⭐".repeat(r.rating)}</span>
-              </div>
-              <p className="review-text">{r.text}</p>
+
+          {/* Show review form if customer just got a delivery from this vendor */}
+          {deliveredOrderId && !reviewed && (
+            <ReviewForm
+              orderId={deliveredOrderId}
+              onDone={() => { setReviewed(true); loadReviews(); }}
+            />
+          )}
+
+          {revLoading ? (
+            <div className="empty-orders" style={{ padding: "32px 0" }}>
+              <div className="emoji">⏳</div><p>Loading reviews…</p>
             </div>
-          ))}
+          ) : reviews.length === 0 ? (
+            <div className="empty-orders" style={{ padding: "32px 0" }}>
+              <div className="emoji">💬</div>
+              <p>No reviews yet</p>
+              <span>Be the first to leave one!</span>
+            </div>
+          ) : (
+            reviews.map(r => <ReviewCard key={r.id} review={r} />)
+          )}
         </div>
       )}
       <div style={{ height: 90 }} />

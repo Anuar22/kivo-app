@@ -48,6 +48,15 @@ export const ordersApi = {
   cancel:        (id)   => apiRequest(`/api/orders/${id}`,   { method: "DELETE" }),
 };
 
+// ─── REVIEWS ─────────────────────────────────────────────────────────────────
+export const reviewsApi = {
+  submit:       (orderId, body) => apiRequest(`/api/orders/${orderId}/review`, { method: "POST", body }),
+  forVendor:    (vendorId, params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return apiRequest(`/api/vendors/${vendorId}/reviews${q ? "?" + q : ""}`);
+  },
+};
+
 // ─── SSE ─────────────────────────────────────────────────────────────────────
 export function subscribeOrderSSE(orderId, onUpdate) {
   const token = localStorage.getItem("kivo_token");

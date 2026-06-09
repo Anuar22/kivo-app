@@ -74,6 +74,18 @@ async function migrate() {
       qty         INT NOT NULL DEFAULT 1
     );
 
+    CREATE TABLE IF NOT EXISTS reviews (
+      id               SERIAL PRIMARY KEY,
+      order_id         INT UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+      vendor_user_id   INT REFERENCES users(id) ON DELETE CASCADE,
+      customer_user_id INT REFERENCES users(id) ON DELETE CASCADE,
+      rating           INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment          TEXT NOT NULL DEFAULT '',
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS reviews_vendor_user_id_idx ON reviews(vendor_user_id);
+
     -- Keep updated_at current automatically
     CREATE OR REPLACE FUNCTION set_updated_at()
     RETURNS TRIGGER AS $$

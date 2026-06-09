@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
 import { apiRequest } from "../api/index.js";
 
@@ -13,6 +13,13 @@ export default function Profile() {
   const [form, setForm]       = useState({ name: user.name, phone: user.phone || "" });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState("");
+  const [stats, setStats]     = useState(null);
+
+  useEffect(() => {
+    apiRequest("/api/auth/me/stats")
+      .then(setStats)
+      .catch(() => {});
+  }, []);
 
   const saveProfile = async () => {
     if (!form.name.trim()) return;
@@ -74,13 +81,13 @@ export default function Profile() {
 
       <div className="profile-stats">
         <div className="profile-stat">
-          <span className="stat-num">—</span>
+          <span className="stat-num">{stats ? stats.completedOrders : "—"}</span>
           <span className="stat-label">Orders</span>
         </div>
         <div className="stat-divider" />
         <div className="profile-stat">
-          <span className="stat-num">—</span>
-          <span className="stat-label">Saved</span>
+          <span className="stat-num">{stats ? `$${Number(stats.totalSpent).toFixed(0)}` : "—"}</span>
+          <span className="stat-label">Spent</span>
         </div>
         <div className="stat-divider" />
         <div className="profile-stat">

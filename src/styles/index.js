@@ -459,6 +459,8 @@ const CSS = `
   .vpill-pending { background: var(--yellow-soft); color: #92400e; }
   .vpill-cooking { background: var(--orange-soft); color: #9a3412; }
   .vpill-ready { background: var(--green-soft); color: #065f46; }
+  .vpill-done { background: #e0f2fe; color: #0369a1; }
+  .vpill-cancel { background: #fee2e2; color: #991b1b; }
   .vorder-items-list { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 4px; }
   .vorder-item-row { display: flex; justify-content: space-between; font-size: 13px; }
   .vorder-item-row .qty { color: var(--orange); font-weight: 600; margin-right: 4px; }

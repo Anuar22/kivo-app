@@ -358,6 +358,171 @@ app.patch("/api/vendor/orders/:id", requireAuth, requireRole("vendor"), async (r
   res.json({ ok: true });
 });
 
+// ─── REVIEWS ──────────────────────────────────────────────────────────────────
+
+// POST /api/orders/:id/review  — customer leaves review after delivery
+app.post("/api/orders/:id/review", requireAuth, requireRole("customer"), async (req, res) => {
+  const rating  = Number(req.body.rating);
+  const comment = String(req.body.comment || "").trim();
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "Rating must be 1–5." });
+  }
+
+  // Fetch the order — must belong to this customer and be Delivered
+  const orderResult = await query(
+    `select o.id, o.customer_user_id, o.vendor_user_id, o.status, o.vendor_name,
+            vp.user_id as vendor_owner_id
+     from orders o
+     left join vendor_profiles vp on vp.business_name = o.vendor_name
+     where (o.id::text = $1 or o.public_id = $1)`,
+    [req.params.id],
+  );
+  const order = orderResult.rows[0];
+  if (!order) return res.status(404).json({ error: "Order not found." });
+  if (order.customer_user_id !== req.session.sub) return res.status(403).json({ error: "Not your order." });
+  if (order.status !== "Delivered") return res.status(400).json({ error: "You can only review delivered orders." });
+
+  const vendorUserId = order.vendor_user_id || order.vendor_owner_id;
+
+  try {
+    const result = await query(
+      `insert into reviews (order_id, vendor_user_id, customer_user_id, rating, comment)
+       values ($1, $2, $3, $4, $5)
+       returning *`,
+      [order.id, vendorUserId, req.session.sub, rating, comment],
+    );
+
+    // Recompute vendor aggregate rating
+    if (vendorUserId) {
+      await query(
+        `update vendors
+         set rating       = (select round(avg(r.rating)::numeric, 1) from reviews r where r.vendor_user_id = $1),
+             review_count = (select count(*) from reviews r where r.vendor_user_id = $1)
+         where user_id = $1`,
+        [vendorUserId],
+      );
+    }
+
+    res.status(201).json({ review: result.rows[0] });
+  } catch (err) {
+    if (err.code === "23505") return res.status(409).json({ error: "You have already reviewed this order." });
+    throw err;
+  }
+});
+
+// GET /api/vendors/:id/reviews  — public, paginated
+app.get("/api/vendors/:id/reviews", async (req, res) => {
+  const limit  = Math.min(Number(req.query.limit)  || 20, 50);
+  const offset = Number(req.query.offset) || 0;
+
+  const result = await query(
+    `select r.id, r.rating, r.comment, r.created_at, u.name as customer_name
+     from reviews r
+     join users u on u.id = r.customer_user_id
+     where r.vendor_user_id = (
+       select user_id from vendors where id = $1
+     )
+     order by r.created_at desc
+     limit $2 offset $3`,
+    [req.params.id, limit, offset],
+  );
+
+  const countResult = await query(
+    `select count(*) from reviews where vendor_user_id = (select user_id from vendors where id = $1)`,
+    [req.params.id],
+  );
+
+  res.json({ reviews: result.rows, total: Number(countResult.rows[0].count) });
+});
+
+// ─── VENDOR HISTORY + REVENUE STATS ──────────────────────────────────────────
+
+// GET /api/vendor/orders/history  — delivered/cancelled orders + revenue summary
+app.get("/api/vendor/orders/history", requireAuth, requireRole("vendor"), async (req, res) => {
+  const limit  = Math.min(Number(req.query.limit)  || 30, 100);
+  const offset = Number(req.query.offset) || 0;
+
+  const result = await query(
+    `select
+       o.*,
+       u.name as customer_name,
+       coalesce(
+         json_agg(
+           json_build_object('name', oi.name, 'qty', oi.qty, 'price', oi.price::float)
+           order by oi.id
+         ) filter (where oi.id is not null),
+         '[]'::json
+       ) as items,
+       case
+         when o.created_at > now() - interval '1 minute' then 'Just now'
+         when o.created_at > now() - interval '1 hour' then floor(extract(epoch from now() - o.created_at) / 60)::int || ' mins ago'
+         when o.created_at > now() - interval '7 days'  then to_char(o.created_at, 'Dy HH12:MI AM')
+         else to_char(o.created_at, 'Mon DD')
+       end as time_label
+     from orders o
+     join users u on u.id = o.customer_user_id
+     where (o.vendor_user_id = $1 or o.vendor_name = (
+       select business_name from vendor_profiles where user_id = $1
+     ))
+     and o.status in ('Delivered', 'Collected', 'Cancelled')
+     group by o.id, u.name
+     order by o.created_at desc
+     limit $2 offset $3`,
+    [req.session.sub, limit, offset],
+  );
+
+  // Revenue stats (today / this week / all time, delivered only)
+  const statsResult = await query(
+    `select
+       count(*) filter (where o.status in ('Delivered','Collected'))                                    as total_orders,
+       coalesce(sum(o.total) filter (where o.status in ('Delivered','Collected')), 0)                   as total_revenue,
+       count(*) filter (where o.status in ('Delivered','Collected') and o.created_at >= now() - interval '7 days') as week_orders,
+       coalesce(sum(o.total) filter (where o.status in ('Delivered','Collected') and o.created_at >= now() - interval '7 days'), 0) as week_revenue,
+       count(*) filter (where o.status in ('Delivered','Collected') and o.created_at >= date_trunc('day', now()))  as today_orders,
+       coalesce(sum(o.total) filter (where o.status in ('Delivered','Collected') and o.created_at >= date_trunc('day', now())), 0)  as today_revenue
+     from orders o
+     where o.vendor_user_id = $1 or o.vendor_name = (
+       select business_name from vendor_profiles where user_id = $1
+     )`,
+    [req.session.sub],
+  );
+
+  const s = statsResult.rows[0];
+  res.json({
+    orders: result.rows.map(cleanOrder),
+    stats: {
+      totalOrders:  Number(s.total_orders),
+      totalRevenue: Number(s.total_revenue),
+      weekOrders:   Number(s.week_orders),
+      weekRevenue:  Number(s.week_revenue),
+      todayOrders:  Number(s.today_orders),
+      todayRevenue: Number(s.today_revenue),
+    },
+  });
+});
+
+// ─── CUSTOMER PROFILE STATS ───────────────────────────────────────────────────
+
+// GET /api/auth/me/stats
+app.get("/api/auth/me/stats", requireAuth, async (req, res) => {
+  const result = await query(
+    `select
+       count(*) filter (where status in ('Delivered','Collected')) as completed_orders,
+       count(*) filter (where status not in ('Delivered','Collected','Cancelled')) as active_orders,
+       coalesce(sum(total) filter (where status in ('Delivered','Collected')), 0) as total_spent
+     from orders
+     where customer_user_id = $1`,
+    [req.session.sub],
+  );
+  const r = result.rows[0];
+  res.json({
+    completedOrders: Number(r.completed_orders),
+    activeOrders:    Number(r.active_orders),
+    totalSpent:      Number(r.total_spent),
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Kivo API running on http://localhost:${PORT}`);
 });
