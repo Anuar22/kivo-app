@@ -349,6 +349,7 @@ const CSS = `
   .payment-opt.active { border-color: var(--orange); background: var(--orange-soft); }
   .payment-opt.disabled { opacity: 0.5; cursor: not-allowed; }
   .coming-soon { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; background: var(--border); border-radius: 6px; padding: 2px 8px; }
+  .stripe-card-wrap:focus-within { border-color: var(--orange) !important; }
   .cart-summary { background: var(--card); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
   .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
   .summary-row span:first-child { color: var(--muted); }

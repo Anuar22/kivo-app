@@ -48,6 +48,11 @@ export const ordersApi = {
   cancel:        (id)   => apiRequest(`/api/orders/${id}`,   { method: "DELETE" }),
 };
 
+// ─── PAYMENTS ────────────────────────────────────────────────────────────────
+export const paymentsApi = {
+  createStripeIntent: (amount) => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
+};
+
 // ─── REVIEWS ─────────────────────────────────────────────────────────────────
 export const reviewsApi = {
   submit:       (orderId, body) => apiRequest(`/api/orders/${orderId}/review`, { method: "POST", body }),

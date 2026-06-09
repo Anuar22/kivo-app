@@ -12,7 +12,20 @@ const app = express();
 
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const allowed =
+      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||   // localhost
+      /^http:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin) ||          // 192.168.x.x
+      /^http:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/.test(origin) ||           // 10.x.x.x
+      /^http:\/\/172\.(1[6-9]|2\d|3[01])\.\d+\.\d+(:\d+)?$/.test(origin); // 172.16–31.x.x
+
+    if (allowed) return callback(null, true);
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) return callback(null, true);
+
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -36,7 +49,10 @@ const PORT = process.env.PORT || 4000;
 
 migrate()
   .then(() => {
-    app.listen(PORT, () => console.log(`🚀 Kivo API running on http://localhost:${PORT}`));
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Kivo API running on http://localhost:${PORT}`);
+      console.log(`🌐 Network access enabled on all interfaces`);
+    });
   })
   .catch(err => {
     console.error("❌ Migration failed:", err.message);
