@@ -26,14 +26,20 @@ export const authApi = {
 
 // ─── VENDORS ─────────────────────────────────────────────────────────────────
 export const vendorsApi = {
-  list:          (category)  => apiRequest(`/api/vendors${category && category !== "All" ? `?category=${category}` : ""}`),
+  list:          (category, coords) => {
+    const params = new URLSearchParams();
+    if (category && category !== "All") params.set("category", category);
+    if (coords?.lat != null) { params.set("lat", coords.lat); params.set("lng", coords.lng); }
+    const qs = params.toString();
+    return apiRequest(`/api/vendors${qs ? "?" + qs : ""}`);
+  },
   get:           (id)        => apiRequest(`/api/vendors/${id}`),
-  myProfile:     ()          => apiRequest("/api/vendors/me/profile"),
-  updateProfile: (body)      => apiRequest("/api/vendors/me/profile", { method: "PATCH", body }),
-  myMenu:        ()          => apiRequest("/api/vendors/me/menu"),
-  addItem:       (body)      => apiRequest("/api/vendors/me/menu",           { method: "POST",   body }),
-  updateItem:    (id, body)  => apiRequest(`/api/vendors/me/menu/${id}`,     { method: "PATCH",  body }),
-  deleteItem:    (id)        => apiRequest(`/api/vendors/me/menu/${id}`,     { method: "DELETE" }),
+  myProfile:     ()          => apiRequest("/api/vendor/profile"),
+  updateProfile: (body)      => apiRequest("/api/vendor/profile", { method: "PATCH", body }),
+  myMenu:        ()          => apiRequest("/api/vendor/menu"),
+  addItem:       (body)      => apiRequest("/api/vendor/menu",           { method: "POST",   body }),
+  updateItem:    (id, body)  => apiRequest(`/api/vendor/menu/${id}`,     { method: "PUT",    body }),
+  deleteItem:    (id)        => apiRequest(`/api/vendor/menu/${id}`,     { method: "DELETE" }),
 };
 
 // ─── ORDERS ───────────────────────────────────────────────────────────────────

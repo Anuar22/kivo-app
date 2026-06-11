@@ -35,6 +35,9 @@ async function migrate() {
       delivery_time TEXT DEFAULT '20–35 min',
       delivery_fee  NUMERIC(6,2) DEFAULT 2.00,
       is_open       BOOLEAN DEFAULT TRUE,
+      latitude      NUMERIC(10,7),
+      longitude     NUMERIC(10,7),
+      address       TEXT,
       created_at    TIMESTAMPTZ DEFAULT NOW()
     );
 
@@ -99,6 +102,17 @@ async function migrate() {
   `);
 
   console.log("✅  DB schema ready");
+
+  // ── Safe column additions for existing databases ──────────────────────────
+  const safeAlters = [
+    "alter table vendors add column if not exists latitude  numeric(10,7)",
+    "alter table vendors add column if not exists longitude numeric(10,7)",
+    "alter table vendors add column if not exists address   text",
+    "alter table reviews add column if not exists id serial",  // no-op if exists
+  ];
+  for (const sql of safeAlters) {
+    await pool.query(sql).catch(() => {});
+  }
 }
 
 module.exports = { pool, migrate };

@@ -358,6 +358,135 @@ app.patch("/api/vendor/orders/:id", requireAuth, requireRole("vendor"), async (r
   res.json({ ok: true });
 });
 
+// ─── PUBLIC VENDORS LIST ──────────────────────────────────────────────────────
+
+// GET /api/vendors?lat=x&lng=y&category=X
+// Returns vendors sorted by real distance when coords are provided,
+// otherwise sorted by rating. Distance is computed via Haversine in SQL.
+app.get("/api/vendors", async (req, res) => {
+  const lat      = parseFloat(req.query.lat);
+  const lng      = parseFloat(req.query.lng);
+  const category = req.query.category;
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+  let q = `
+    select v.*,
+      u.email,
+      ${hasCoords ? `
+      round(
+        6371 * 2 * asin(sqrt(
+          power(sin(radians(v.latitude  - $1) / 2), 2) +
+          cos(radians($1)) * cos(radians(v.latitude)) *
+          power(sin(radians(v.longitude - $2) / 2), 2)
+        ))::numeric, 1
+      ) as distance_km
+      ` : "null as distance_km"}
+    from vendors v
+    join users u on u.id = v.user_id
+    where v.is_open = true
+  `;
+  const params = hasCoords ? [lat, lng] : [];
+  let idx = params.length + 1;
+
+  if (category && category !== "All") {
+    params.push(category);
+    q += ` and v.category = $${idx++}`;
+  }
+
+  q += hasCoords
+    ? " order by distance_km asc nulls last"
+    : " order by v.rating desc";
+
+  const { rows } = await query(q, params);
+
+  // Attach human-readable distance string
+  const vendors = rows.map(v => ({
+    ...v,
+    distance: v.distance_km != null ? `${v.distance_km} km` : (v.distance || "—"),
+  }));
+
+  res.json({ vendors });
+});
+
+// GET /api/vendor/profile  — vendor reads own full profile
+app.get("/api/vendor/profile", requireAuth, requireRole("vendor"), async (req, res) => {
+  const { rows } = await query(
+    "select * from vendors where user_id = $1",
+    [req.session.sub],
+  );
+  if (!rows[0]) {
+    // Auto-create vendor row if missing (first login after registration)
+    const nameResult = await query(
+      "select business_name from vendor_profiles where user_id = $1",
+      [req.session.sub],
+    );
+    const name = nameResult.rows[0]?.business_name || "My Restaurant";
+    const { rows: created } = await query(
+      "insert into vendors (user_id, name) values ($1, $2) returning *",
+      [req.session.sub, name],
+    );
+    return res.json({ vendor: created[0] });
+  }
+  res.json({ vendor: rows[0] });
+});
+
+// PATCH /api/vendor/profile  — vendor updates name, category, description,
+//   delivery_fee, delivery_time, is_open, image, tag, tag_color,
+//   latitude, longitude, address
+app.patch("/api/vendor/profile", requireAuth, requireRole("vendor"), async (req, res) => {
+  const {
+    name, category, description, deliveryFee, deliveryTime,
+    isOpen, image, tag, tagColor, latitude, longitude, address,
+  } = req.body;
+
+  const { rows } = await query(
+    `update vendors set
+       name          = coalesce($1,  name),
+       category      = coalesce($2,  category),
+       description   = coalesce($3,  description),
+       delivery_fee  = coalesce($4,  delivery_fee),
+       delivery_time = coalesce($5,  delivery_time),
+       is_open       = coalesce($6,  is_open),
+       image         = coalesce($7,  image),
+       tag           = coalesce($8,  tag),
+       tag_color     = coalesce($9,  tag_color),
+       latitude      = coalesce($10, latitude),
+       longitude     = coalesce($11, longitude),
+       address       = coalesce($12, address)
+     where user_id = $13
+     returning *`,
+    [name, category, description, deliveryFee, deliveryTime,
+     isOpen, image, tag, tagColor,
+     latitude  != null ? Number(latitude)  : null,
+     longitude != null ? Number(longitude) : null,
+     address, req.session.sub],
+  );
+  if (!rows[0]) return res.status(404).json({ error: "Vendor profile not found." });
+
+  // Keep vendor_profiles.business_name in sync if name changed
+  if (name) {
+    await query(
+      "update vendor_profiles set business_name = $1 where user_id = $2",
+      [name, req.session.sub],
+    );
+  }
+  res.json({ vendor: rows[0] });
+});
+
+// ─── PUBLIC VENDOR BY ID ──────────────────────────────────────────────────────
+app.get("/api/vendors/:id", async (req, res) => {
+  const { rows: vRows } = await query(
+    "select v.*, u.email from vendors v join users u on u.id = v.user_id where v.id = $1",
+    [req.params.id],
+  );
+  if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
+  const { rows: menu } = await query(
+    "select * from menu_items where vendor_user_id = $1 and available = true order by created_at asc",
+    [vRows[0].user_id],
+  );
+  res.json({ vendor: vRows[0], menu });
+});
+
 // ─── STRIPE PAYMENTS ──────────────────────────────────────────────────────────
 
 // POST /api/payments/stripe/intent
