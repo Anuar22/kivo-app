@@ -249,7 +249,7 @@ export default function VProfileTab({ showToast }) {
           <div className="stat-sub">
             <button
               onClick={() => set("isOpen", !form.isOpen)}
-              style={{ background: "none", border: "none", color: "#ff6b35", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif" }}
+              style={{ background: "none", border: "none", color: "#e53935", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "DM Sans, sans-serif" }}
             >
               Toggle
             </button>
@@ -296,9 +296,9 @@ export default function VProfileTab({ showToast }) {
               onClick={() => set("category", c)}
               style={{
                 padding: "6px 14px", borderRadius: 100, border: "1.5px solid",
-                borderColor: form.category === c ? "#ff6b35" : "#e8e4df",
+                borderColor: form.category === c ? "#e53935" : "#e8e4df",
                 background:  form.category === c ? "#fff1ec" : "#fff",
-                color:       form.category === c ? "#ff6b35" : "#7a7065",
+                color:       form.category === c ? "#e53935" : "#7a7065",
                 fontSize: 13, fontWeight: 500, cursor: "pointer",
                 fontFamily: "DM Sans, sans-serif",
               }}

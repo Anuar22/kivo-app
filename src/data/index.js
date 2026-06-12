@@ -13,7 +13,7 @@ export const vendors = [
   {
     id: 1, name: "Mama Njeri's Kitchen", category: "Local Food",
     rating: 4.8, reviews: 312, distance: "0.8 km", deliveryTime: "20–30 min", deliveryFee: 1.5,
-    image: "🍛", tag: "Top Rated", tagColor: "#ff6b35",
+    image: "🍛", tag: "Top Rated", tagColor: "#e53935",
     description: "Authentic East African home cooking. Ugali, nyama choma, sukuma wiki and more.",
     menu: [
       { id: 101, name: "Ugali & Beef Stew", price: 4.50, image: "🍖", description: "Creamy ugali with slow-cooked beef stew", popular: true },
@@ -86,7 +86,7 @@ export const popularMeals = [
 export const STATUSES = ["Pending", "Accepted", "Cooking", "Ready", "Delivered"];
 export const STATUS_ICONS = { Pending: "🕐", Accepted: "✅", Cooking: "👨‍🍳", Ready: "📦", Delivered: "🛵" };
 export const STATUS_COLORS = {
-  Pending: "#f59e0b", Accepted: "#6366f1", Cooking: "#ff6b35",
+  Pending: "#f59e0b", Accepted: "#6366f1", Cooking: "#e53935",
   Ready: "#10b981", Delivered: "#10b981",
 };
 

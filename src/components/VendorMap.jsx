@@ -47,7 +47,7 @@ export default function VendorMap({ vendors, customerCoords, onVendorSelect }) {
       // Customer pin
       if (customerCoords) {
         const youIcon = L.divIcon({
-          html: `<div style="width:14px;height:14px;background:#ff6b35;border:3px solid white;border-radius:50%;box-shadow:0 0 0 3px rgba(255,107,53,0.3)"></div>`,
+          html: `<div style="width:14px;height:14px;background:#e53935;border:3px solid white;border-radius:50%;box-shadow:0 0 0 3px rgba(229,57,53,0.3)"></div>`,
           className: "",
           iconAnchor: [7, 7],
         });
@@ -66,7 +66,7 @@ export default function VendorMap({ vendors, customerCoords, onVendorSelect }) {
           html: `
             <div style="
               background: white;
-              border: 2px solid #ff6b35;
+              border: 2px solid #e53935;
               border-radius: 10px;
               padding: 4px 8px;
               font-size: 12px;
@@ -115,7 +115,7 @@ export default function VendorMap({ vendors, customerCoords, onVendorSelect }) {
       const icon = L.divIcon({
         html: `
           <div style="
-            background:white;border:2px solid #ff6b35;border-radius:10px;
+            background:white;border:2px solid #e53935;border-radius:10px;
             padding:4px 8px;font-size:12px;font-weight:700;
             font-family:DM Sans,sans-serif;white-space:nowrap;
             box-shadow:0 2px 8px rgba(0,0,0,0.15);
@@ -184,7 +184,7 @@ export default function VendorMap({ vendors, customerCoords, onVendorSelect }) {
             <button
               onClick={() => { onVendorSelect(selected); setSelected(null); }}
               style={{
-                background: "#ff6b35", border: "none", borderRadius: 10,
+                background: "#e53935", border: "none", borderRadius: 10,
                 padding: "8px 14px", color: "white", fontWeight: 700,
                 fontSize: 13, cursor: "pointer", fontFamily: "DM Sans, sans-serif",
               }}

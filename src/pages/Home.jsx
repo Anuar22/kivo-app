@@ -88,7 +88,7 @@ export default function Home({ navigate }) {
     ...v,
     deliveryFee:  Number(v.delivery_fee  ?? v.deliveryFee  ?? 2),
     deliveryTime: v.delivery_time ?? v.deliveryTime ?? "20–35 min",
-    tagColor:     v.tag_color ?? v.tagColor ?? "#ff6b35",
+    tagColor:     v.tag_color ?? v.tagColor ?? "#e53935",
     reviewCount:  v.review_count ?? v.reviews ?? 0,
   });
 

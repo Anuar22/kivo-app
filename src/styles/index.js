@@ -4,8 +4,8 @@ const CSS = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --orange: #ff6b35;
-    --orange-soft: #fff1ec;
+    --orange: #e53935;
+    --orange-soft: #fdecea;
     --black: #0f0f0f;
     --dark: #1a1a1a;
     --card: #ffffff;
@@ -40,7 +40,7 @@ const CSS = `
   button, input { font: inherit; }
   button { -webkit-tap-highlight-color: transparent; }
   button:focus-visible, input:focus-visible {
-    outline: 3px solid rgba(255,107,53,0.28);
+    outline: 3px solid rgba(229,57,53,0.28);
     outline-offset: 2px;
   }
 
@@ -55,7 +55,7 @@ const CSS = `
   .auth-screen {
     min-height: 100svh;
     background:
-      linear-gradient(145deg, rgba(255,107,53,0.18), rgba(255,255,255,0) 44%),
+      linear-gradient(145deg, rgba(229,57,53,0.18), rgba(255,255,255,0) 44%),
       linear-gradient(135deg, #141414 0%, #2a190d 100%);
     padding: 28px 18px;
     display: flex;
@@ -115,13 +115,13 @@ const CSS = `
     border: none;
     border-radius: 13px;
     padding: 14px;
-    background: linear-gradient(135deg, #ff6b35, #e55a20);
+    background: linear-gradient(135deg, #e53935, #c62828);
     color: white;
     font-family: 'Syne', sans-serif;
     font-size: 15px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 10px 26px rgba(255,107,53,0.3);
+    box-shadow: 0 10px 26px rgba(229,57,53,0.3);
   }
   .auth-submit:disabled { opacity: 0.65; cursor: wait; }
   .auth-hint { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 12px; }
@@ -209,7 +209,7 @@ const CSS = `
   /* ── HOME ── */
   .home-hero {
     background:
-      linear-gradient(145deg, rgba(255,107,53,0.18), rgba(255,255,255,0) 42%),
+      linear-gradient(145deg, rgba(229,57,53,0.18), rgba(255,255,255,0) 42%),
       linear-gradient(135deg, #141414 0%, #2a190d 100%);
     padding: 26px 16px 28px; position: relative; overflow: hidden;
   }
@@ -232,9 +232,9 @@ const CSS = `
   .clear-search { background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 14px; padding: 2px; }
   .promo-banner {
     margin: 16px; border-radius: var(--radius);
-    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    background: linear-gradient(135deg, #e53935, #ff5252);
     padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
-    box-shadow: 0 12px 30px rgba(255,107,53,0.28);
+    box-shadow: 0 12px 30px rgba(229,57,53,0.28);
   }
   .promo-text .promo-tag { font-size: 10px; font-weight: 700; letter-spacing: 1px; background: rgba(255,255,255,0.25); border-radius: 20px; padding: 2px 8px; color: white; display: inline-block; margin-bottom: 6px; }
   .promo-text h3 { color: white; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 2px; }
@@ -275,7 +275,7 @@ const CSS = `
   .empty-state span { color: var(--muted); font-size: 14px; }
 
   /* ── VENDOR PAGE ── */
-  .vendor-hero { background: linear-gradient(145deg, rgba(255,107,53,0.16), rgba(255,255,255,0) 42%), linear-gradient(135deg, #141414, #2a190d); padding: 24px 16px; position: relative; min-height: 200px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .vendor-hero { background: linear-gradient(145deg, rgba(229,57,53,0.16), rgba(255,255,255,0) 42%), linear-gradient(135deg, #141414, #2a190d); padding: 24px 16px; position: relative; min-height: 200px; display: flex; flex-direction: column; justify-content: flex-end; }
   .vendor-hero-art { font-size: 80px; position: absolute; top: 20px; right: 20px; opacity: 0.35; }
   .vendor-hero-overlay { position: relative; z-index: 1; }
   .vendor-hero-tag { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: white; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
@@ -299,7 +299,7 @@ const CSS = `
   .menu-item-bottom { display: flex; justify-content: space-between; align-items: center; }
   .menu-item-price { font-weight: 700; color: var(--orange); font-size: 15px; }
   .add-btn { background: var(--orange); color: white; border: none; border-radius: 10px; min-width: 70px; min-height: 34px; padding: 7px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s, transform 0.18s ease; }
-  .add-btn:hover { background: #e55a20; }
+  .add-btn:hover { background: #c62828; }
   .qty-control { display: flex; align-items: center; gap: 10px; background: var(--black); border-radius: 10px; padding: 6px 10px; }
   .qty-control button { background: none; border: none; color: white; font-size: 16px; cursor: pointer; width: 20px; display: flex; align-items: center; justify-content: center; }
   .qty-control span { color: white; font-weight: 700; font-size: 14px; min-width: 16px; text-align: center; }
@@ -317,7 +317,7 @@ const CSS = `
 
   /* ── CART ── */
   .cart-page { padding: 16px; }
-  .cart-vendor-label { background: var(--orange-soft); border: 1px solid rgba(255,107,53,0.2); border-radius: 12px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .cart-vendor-label { background: var(--orange-soft); border: 1px solid rgba(229,57,53,0.2); border-radius: 12px; padding: 10px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .cart-items { background: var(--card); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; box-shadow: var(--shadow-sm); }
   .cart-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
   .cart-item:last-child { border-bottom: none; }
@@ -340,8 +340,8 @@ const CSS = `
   .summary-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
   .summary-row span:first-child { color: var(--muted); }
   .total-row { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 12px; font-size: 16px; font-weight: 700; }
-  .btn-primary { width: 100%; padding: 16px; border-radius: 16px; border: none; background: linear-gradient(135deg, #ff6b35, #e55a20); color: white; font-size: 16px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; box-shadow: 0 8px 24px rgba(255,107,53,0.4); transition: all 0.2s; }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,107,53,0.5); }
+  .btn-primary { width: 100%; padding: 16px; border-radius: 16px; border: none; background: linear-gradient(135deg, #e53935, #c62828); color: white; font-size: 16px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; box-shadow: 0 8px 24px rgba(229,57,53,0.4); transition: all 0.2s; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(229,57,53,0.5); }
   .btn-primary:disabled { opacity: 0.7; cursor: wait; transform: none; }
   .btn-secondary { width: 100%; padding: 14px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; }
   .place-order-btn { margin-bottom: 16px; }
@@ -367,7 +367,7 @@ const CSS = `
   .otab-badge { background: var(--orange); color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
   .orders-list { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
   .order-card { background: var(--card); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); position: relative; overflow: hidden; box-shadow: var(--shadow-sm); }
-  .order-card.order-live { border-color: rgba(255,107,53,0.3); }
+  .order-card.order-live { border-color: rgba(229,57,53,0.3); }
   .live-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: var(--orange); margin-bottom: 10px; display: flex; align-items: center; gap: 4px; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
@@ -379,7 +379,7 @@ const CSS = `
   .track-step { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; position: relative; min-width: 56px; }
   .track-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--border); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; transition: all 0.4s; color: var(--muted); z-index: 1; position: relative; }
   .track-step.done .track-dot { background: var(--green); border-color: var(--green); color: white; }
-  .track-step.current .track-dot { background: var(--orange); border-color: var(--orange); color: white; box-shadow: 0 0 0 4px rgba(255,107,53,0.2); }
+  .track-step.current .track-dot { background: var(--orange); border-color: var(--orange); color: white; box-shadow: 0 0 0 4px rgba(229,57,53,0.2); }
   .track-step span { font-size: 10px; color: var(--muted); text-align: center; font-weight: 500; }
   .track-step.done span, .track-step.current span { color: var(--text); font-weight: 600; }
   .track-line { position: absolute; top: 16px; left: 50%; width: 100%; height: 2px; background: var(--border); z-index: 0; }
@@ -392,7 +392,7 @@ const CSS = `
   /* ── PROFILE ── */
   .profile-page { padding: 0 0 16px; }
   .profile-hero { background: linear-gradient(135deg, #1a1a1a, #2d1a0a); padding: 24px 16px; display: flex; align-items: center; gap: 16px; }
-  .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--orange), #ff8c42); color: white; font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255,107,53,0.4); }
+  .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--orange), #ff5252); color: white; font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(229,57,53,0.4); }
   .profile-info h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: white; margin-bottom: 4px; }
   .profile-info p { color: rgba(255,255,255,0.6); font-size: 13px; }
   .profile-stats { background: var(--card); margin: 16px; border-radius: var(--radius); display: flex; align-items: center; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }

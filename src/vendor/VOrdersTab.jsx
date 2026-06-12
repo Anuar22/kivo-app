@@ -194,7 +194,7 @@ export default function VOrdersTab({ showToast }) {
       {tab === "active" && (
         <>
           <div className="stats-row">
-            <StatCard label="Pending" value={pendingCount} sub="awaiting action" valueStyle={{ color: "#ff6b35" }} />
+            <StatCard label="Pending" value={pendingCount} sub="awaiting action" valueStyle={{ color: "#e53935" }} />
             <StatCard label="Active" value={orders.length} sub="in progress" valueStyle={{ color: "#22c55e" }} />
           </div>
 
@@ -210,7 +210,7 @@ export default function VOrdersTab({ showToast }) {
               }}>
                 {f}
                 {f === "Pending" && pendingCount > 0 && (
-                  <span style={{ marginLeft: 5, background: "#ff6b35", color: "white", fontSize: 10, fontWeight: 700, borderRadius: "50%", width: 16, height: 16, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ marginLeft: 5, background: "#e53935", color: "white", fontSize: 10, fontWeight: 700, borderRadius: "50%", width: 16, height: 16, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
                     {pendingCount}
                   </span>
                 )}
@@ -240,7 +240,7 @@ export default function VOrdersTab({ showToast }) {
             <>
               <div className="stats-row">
                 <StatCard label="Today's revenue" value={`$${Number(stats.todayRevenue).toFixed(2)}`} sub={`${stats.todayOrders} orders`} valueStyle={{ color: "#22c55e", fontSize: 18 }} />
-                <StatCard label="This week" value={`$${Number(stats.weekRevenue).toFixed(2)}`} sub={`${stats.weekOrders} orders`} valueStyle={{ color: "#ff6b35", fontSize: 18 }} />
+                <StatCard label="This week" value={`$${Number(stats.weekRevenue).toFixed(2)}`} sub={`${stats.weekOrders} orders`} valueStyle={{ color: "#e53935", fontSize: 18 }} />
               </div>
               <div className="stats-row" style={{ marginTop: 0 }}>
                 <StatCard label="All-time revenue" value={`$${Number(stats.totalRevenue).toFixed(2)}`} sub={`${stats.totalOrders} completed`} valueStyle={{ color: "#0f0f0f", fontSize: 18 }} />
