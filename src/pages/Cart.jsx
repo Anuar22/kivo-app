@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "../context/CartContext.jsx";
 import { ordersApi, paymentsApi } from "../api/index.js";
+import SuccessModal from "../components/SuccessModal.jsx";
 
 // Load Stripe.js once from CDN — no npm package needed
 function loadStripeJs() {
@@ -129,6 +130,20 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
 }
 
 // ── Main Cart ───────────────────────────────────────────────────────────────
+const PAY_METHODS = [
+  {
+    id: "card", label: "Card",
+    detail: "Pay securely with Visa or Mastercard",
+    render: () => (
+      <div className="pm-card-icons">
+        <span className="pm-mc" /><span className="pm-visa">VISA</span>
+      </div>
+    ),
+  },
+  { id: "cash",   label: "Cash on Delivery", detail: "Pay when your order arrives", emoji: "💵" },
+  { id: "mobile", label: "Mobile Money",     detail: "Coming soon",                 emoji: "📱", disabled: true },
+];
+
 export default function Cart({ navigate }) {
   const { items, addItem, removeItem, clearCart, total, vendorName, vendorId } = useCart();
   const [address, setAddress]       = useState("");
@@ -139,17 +154,11 @@ export default function Cart({ navigate }) {
   const [error, setError]           = useState("");
 
   const deliveryFee = items.length > 0 ? 2.00 : 0;
-  const grandTotal  = total + deliveryFee;
+  const taxes       = items.length > 0 ? Math.round(total * 0.05 * 100) / 100 : 0;
+  const grandTotal  = total + deliveryFee + taxes;
 
   const stripeAvailable = !!PUBLISHABLE_KEY;
 
-  const paymentOptions = [
-    { id: "cash",   label: "Cash on Delivery", icon: "💵" },
-    { id: "card",   label: "Card Payment",      icon: "💳", disabled: !stripeAvailable },
-    { id: "mobile", label: "Mobile Money",      icon: "📱", disabled: true },
-  ];
-
-  // When user switches away from card, close the form
   useEffect(() => {
     if (payMethod !== "card") setShowCardForm(false);
   }, [payMethod]);
@@ -168,7 +177,6 @@ export default function Cart({ navigate }) {
         items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
       });
       setPlaced(true);
-      setTimeout(() => { clearCart(); navigate("orders"); }, 2600);
     } catch (e) {
       setError(e.message);
       setLoading(false);
@@ -177,28 +185,20 @@ export default function Cart({ navigate }) {
 
   const placeOrder = async () => {
     if (!address.trim()) { setError("Please enter a delivery address."); return; }
-    if (payMethod === "card") {
-      // Show the Stripe form — payment happens there, then calls submitOrder
+    if (payMethod === "card" && stripeAvailable) {
       setShowCardForm(true);
       return;
     }
     submitOrder();
   };
 
-  // ── Success screen ─────────────────────────────────────────────────────────
-  if (placed) return (
-    <div className="page cart-page order-success">
-      <div className="success-animation">
-        <div className="success-circle">✓</div>
-        <h2>Order Placed!</h2>
-        <p>Your order has been sent to {vendorName}.<br />You'll be notified when accepted.</p>
-        <div className="success-loader"><div className="success-bar" /></div>
-      </div>
-    </div>
-  );
+  const closeSuccess = () => {
+    clearCart();
+    navigate("orders");
+  };
 
   // ── Empty cart ─────────────────────────────────────────────────────────────
-  if (items.length === 0) return (
+  if (items.length === 0 && !placed) return (
     <div className="page cart-page">
       <div className="empty-cart">
         <span className="empty-cart-icon">🛒</span>
@@ -212,71 +212,76 @@ export default function Cart({ navigate }) {
   );
 
   return (
-    <div className="page cart-page">
-      <div className="cart-vendor-label">
-        <span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong>
-      </div>
+    <div className="cart-v2">
+      <div style={{ padding: "0 20px 200px" }}>
 
-      {/* ── Items ── */}
-      <div className="cart-items">
-        {items.map(item => (
-          <div key={item.id} className="cart-item">
-            <div className="cart-item-emoji">{item.image}</div>
-            <div className="cart-item-info">
-              <p className="cart-item-name">{item.name}</p>
-              <p className="cart-item-price">${(item.price * item.qty).toFixed(2)}</p>
-            </div>
-            <div className="qty-control">
-              <button onClick={() => removeItem(item.id)}>−</button>
-              <span>{item.qty}</span>
-              <button onClick={() => addItem(item, { id: vendorId, name: vendorName })}>+</button>
-            </div>
-          </div>
-        ))}
-      </div>
+        <div className="cart-vendor-label">
+          <span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong>
+        </div>
 
-      {/* ── Address ── */}
-      <div className="cart-section">
-        <h3>📍 Delivery Address</h3>
+        {/* ── Items ── */}
+        <div className="cart-items">
+          {items.map(item => (
+            <div key={item.id} className="cart-item">
+              <div className="cart-item-emoji">{item.image}</div>
+              <div className="cart-item-info">
+                <p className="cart-item-name">{item.name}</p>
+                <p className="cart-item-price">${(item.price * item.qty).toFixed(2)}</p>
+              </div>
+              <div className="qty-control">
+                <button onClick={() => removeItem(item.id)}>−</button>
+                <span>{item.qty}</span>
+                <button onClick={() => addItem(item, { id: vendorId, name: vendorName })}>+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Address ── */}
+        <p className="cv2-section-title">📍 Delivery Address</p>
         <input
-          className="address-input"
+          className="pv2-input"
           placeholder="Enter your delivery address..."
           value={address}
           onChange={e => setAddress(e.target.value)}
+          style={{ marginBottom: 20 }}
         />
-      </div>
 
-      {/* ── Payment method ── */}
-      <div className="cart-section">
-        <h3>💳 Payment Method</h3>
-        <div className="payment-options">
-          {paymentOptions.map(opt => (
+        {/* ── Order summary ── */}
+        <p className="cv2-section-title">Order summary</p>
+        <div className="cv2-summary">
+          <div className="cv2-summary-row"><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
+          <div className="cv2-summary-row"><span>Taxes (5%)</span><span>${taxes.toFixed(2)}</span></div>
+          <div className="cv2-summary-row"><span>Delivery fee</span><span>${deliveryFee.toFixed(2)}</span></div>
+          <div className="cv2-summary-divider" />
+          <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
+        </div>
+
+        {/* ── Payment methods ── */}
+        <p className="cv2-section-title">Payment methods</p>
+        <div className="cv2-pay-list">
+          {PAY_METHODS.map(pm => (
             <button
-              key={opt.id}
-              className={`payment-opt ${payMethod === opt.id ? "active" : ""} ${opt.disabled ? "disabled" : ""}`}
-              onClick={() => {
-                if (opt.disabled) return;
-                setPayMethod(opt.id);
-                setShowCardForm(false);
-              }}
+              key={pm.id}
+              className={`cv2-pay-opt ${payMethod === pm.id ? "active" : ""} ${pm.disabled ? "disabled" : ""}`}
+              onClick={() => { if (!pm.disabled) setPayMethod(pm.id); }}
+              disabled={pm.disabled}
             >
-              <span>{opt.icon}</span>
-              <span>{opt.label}</span>
-              {opt.disabled && (
-                <span className="coming-soon">
-                  {opt.id === "card" && !stripeAvailable ? "Setup Required" : "Coming Soon"}
-                </span>
-              )}
-              {opt.id === "card" && stripeAvailable && payMethod === "card" && !showCardForm && (
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "#22c55e", fontWeight: 600 }}>✓ Ready</span>
-              )}
+              <div className="cv2-pay-icon">
+                {pm.render ? pm.render() : pm.emoji}
+              </div>
+              <div className="cv2-pay-text">
+                <span className="cv2-pay-label">{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
+                <span className="cv2-pay-detail">{pm.detail}</span>
+              </div>
+              <div className={`cv2-radio ${payMethod === pm.id ? "checked" : ""}`} />
             </button>
           ))}
         </div>
 
-        {/* Stripe card form — shown inline when card is selected and Pay is clicked */}
+        {/* Stripe card form */}
         {payMethod === "card" && stripeAvailable && showCardForm && (
-          <div style={{ marginTop: 12, background: "#fafaf9", border: "1.5px solid #e8e4df", borderRadius: 14, padding: "16px 14px" }}>
+          <div style={{ marginTop: 14, background: "#fafaf9", border: "1.5px solid #f0f0f0", borderRadius: 14, padding: "16px 14px" }}>
             <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: "#0f0f0f" }}>Enter card details</p>
             <StripeCardForm
               amount={grandTotal}
@@ -286,39 +291,40 @@ export default function Cart({ navigate }) {
           </div>
         )}
 
-        {/* No VITE_STRIPE_PUBLISHABLE_KEY set — guide message */}
         {payMethod === "card" && !stripeAvailable && (
           <div style={{ marginTop: 10, padding: "10px 14px", background: "#fff8f5", border: "1.5px solid #ffe8da", borderRadius: 10, fontSize: 12, color: "#7a7065", lineHeight: 1.6 }}>
-            💡 Card payments need <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> in your <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>.env</code> and <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>STRIPE_SECRET_KEY</code> in the server <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>.env</code>.
+            💡 Card payments need <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> configured. Cash on Delivery is available now.
+          </div>
+        )}
+
+        {error && (
+          <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 13, color: "#991b1b" }}>
+            {error}
           </div>
         )}
       </div>
 
-      {/* ── Summary ── */}
-      <div className="cart-summary">
-        <div className="summary-row"><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
-        <div className="summary-row"><span>Delivery Fee</span><span>${deliveryFee.toFixed(2)}</span></div>
-        <div className="summary-row total-row"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
-      </div>
-
-      {error && (
-        <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: "#991b1b" }}>
-          {error}
+      {/* ── Sticky bottom Pay bar ── */}
+      {!showCardForm && (
+        <div className="cv2-bottom-bar">
+          <div className="cv2-bottom-total">
+            <span className="cv2-bottom-total-label">Total amt</span>
+            <span className="cv2-bottom-total-amount">${grandTotal.toFixed(2)}</span>
+          </div>
+          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading}>
+            {loading ? "Placing…" : "Pay Now"}
+          </button>
         </div>
       )}
 
-      {/* Hide the main CTA when the Stripe form is open — it has its own Pay button */}
-      {!showCardForm && (
-        <button className="btn-primary place-order-btn" onClick={placeOrder} disabled={loading}>
-          {loading
-            ? "Placing order..."
-            : payMethod === "card" && stripeAvailable
-              ? `Pay by Card · $${grandTotal.toFixed(2)}`
-              : `Place Order · $${grandTotal.toFixed(2)}`
-          }
-        </button>
+      {placed && (
+        <SuccessModal
+          title="Success!"
+          message={`Your order has been placed with ${vendorName}. You'll be notified once it's accepted.`}
+          buttonLabel="Go Back"
+          onClose={closeSuccess}
+        />
       )}
-      <div style={{ height: 20 }} />
     </div>
   );
 }

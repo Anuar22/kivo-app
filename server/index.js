@@ -28,6 +28,7 @@ function cleanUser(row) {
     name: row.name,
     email: row.email,
     phone: row.phone,
+    address: row.address || null,
     businessName: row.business_name || null,
     createdAt: row.created_at,
   };
@@ -163,7 +164,7 @@ app.post("/api/auth/login", async (req, res) => {
 app.get("/api/auth/me", requireAuth, async (req, res) => {
   const result = await query(
     `
-      select u.id, u.role, u.name, u.email, u.phone, u.created_at, vp.business_name
+      select u.id, u.role, u.name, u.email, u.phone, u.address, u.created_at, vp.business_name
       from users u
       left join vendor_profiles vp on vp.user_id = u.id
       where u.id = $1
@@ -173,6 +174,30 @@ app.get("/api/auth/me", requireAuth, async (req, res) => {
 
   if (!result.rows[0]) return res.status(404).json({ error: "Account not found." });
   res.json({ user: cleanUser(result.rows[0]) });
+});
+
+// PATCH /api/auth/me/update — customer/vendor edits name, phone, address
+app.patch("/api/auth/me/update", requireAuth, async (req, res) => {
+  const name    = req.body.name  != null ? String(req.body.name).trim()  : null;
+  const phone   = req.body.phone != null ? String(req.body.phone).trim() : null;
+  const address = req.body.address != null ? String(req.body.address).trim() : null;
+
+  if (name !== null && name.length < 2) {
+    return res.status(400).json({ error: "Name must be at least 2 characters." });
+  }
+
+  const { rows } = await query(
+    `update users set
+       name    = coalesce($1, name),
+       phone   = coalesce($2, phone),
+       address = coalesce($3, address)
+     where id = $4
+     returning id, role, name, email, phone, address, created_at,
+       (select business_name from vendor_profiles where user_id = $4) as business_name`,
+    [name, phone, address, req.session.sub],
+  );
+
+  res.json({ user: cleanUser(rows[0]) });
 });
 
 app.get("/api/orders", requireAuth, requireRole("customer"), async (req, res) => {

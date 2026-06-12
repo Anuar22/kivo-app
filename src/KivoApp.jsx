@@ -51,10 +51,6 @@ function KivoShell() {
     <>
       <style>{CSS}</style>
       <div className="kivo-root">
-        <div className="role-switcher">
-          <span className="role-label">Signed in</span>
-          <button className="role-btn active">{role === "vendor" ? "🏪 Vendor" : "👤 Customer"}</button>
-        </div>
 
         {role === "customer" ? (
           <>
@@ -64,12 +60,12 @@ function KivoShell() {
               {screen === "vendor" && <VendorPage vendor={selectedVendor} />}
               {screen === "cart"   && <Cart navigate={navigate} />}
               {screen === "orders" && <Orders />}
-              {screen === "profile"&& <Profile />}
+              {screen === "profile"&& <Profile navigate={navigate} />}
             </div>
             <BottomNav screen={screen} navigate={navigate} />
           </>
         ) : (
-          <div style={{ paddingTop: 36, minHeight: "100vh" }}>
+          <div style={{ minHeight: "100vh" }}>
             <VendorDashboard showToast={showToast} />
           </div>
         )}

@@ -14,6 +14,7 @@ async function migrate() {
       name        TEXT NOT NULL,
       email       TEXT UNIQUE NOT NULL,
       phone       TEXT,
+      address     TEXT,
       password    TEXT NOT NULL,
       role        TEXT NOT NULL DEFAULT 'customer',   -- 'customer' | 'vendor'
       business_name TEXT,
@@ -105,6 +106,7 @@ async function migrate() {
 
   // ── Safe column additions for existing databases ──────────────────────────
   const safeAlters = [
+    "alter table users   add column if not exists address   text",
     "alter table vendors add column if not exists latitude  numeric(10,7)",
     "alter table vendors add column if not exists longitude numeric(10,7)",
     "alter table vendors add column if not exists address   text",

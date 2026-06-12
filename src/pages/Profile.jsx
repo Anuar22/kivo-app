@@ -1,33 +1,65 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
 import { apiRequest } from "../api/index.js";
+import SuccessModal from "../components/SuccessModal.jsx";
 
-const PROFILE_SECTIONS = [
-  { title: "Account", items: [{ icon: "📍", label: "Saved Addresses" }, { icon: "💳", label: "Payment Methods" }] },
-  { title: "Support", items: [{ icon: "💬", label: "Help & Support" }, { icon: "📄", label: "Terms & Privacy" }, { icon: "🔔", label: "Notifications" }] },
-];
+function Field({ label, value, onChange, type = "text", placeholder }) {
+  return (
+    <div className="pv2-field">
+      <label className="pv2-label">{label}</label>
+      <input
+        className="pv2-input"
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
 
-export default function Profile() {
+function ListRow({ icon, label, onClick }) {
+  return (
+    <button className="pv2-row" onClick={onClick}>
+      <span className="pv2-row-icon">{icon}</span>
+      <span className="pv2-row-label">{label}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2.5">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  );
+}
+
+export default function Profile({ navigate }) {
   const { user, logout } = useAccount();
-  const [editing, setEditing] = useState(false);
-  const [form, setForm]       = useState({ name: user.name, phone: user.phone || "" });
+  const [form, setForm] = useState({
+    name: user.name || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    address: user.address || "",
+    password: "••••••••",
+  });
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState("");
+  const [success, setSuccess] = useState(false);
   const [stats, setStats]     = useState(null);
 
   useEffect(() => {
-    apiRequest("/api/auth/me/stats")
-      .then(setStats)
-      .catch(() => {});
+    apiRequest("/api/auth/me/stats").then(setStats).catch(() => {});
   }, []);
 
-  const saveProfile = async () => {
-    if (!form.name.trim()) return;
+  const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
+
+  const save = async () => {
+    if (!form.name.trim()) { setError("Name is required."); return; }
     setSaving(true);
     setError("");
     try {
-      await apiRequest("/api/auth/me/update", { method: "PATCH", body: form });
-      setEditing(false);
+      await apiRequest("/api/auth/me/update", {
+        method: "PATCH",
+        body: { name: form.name, phone: form.phone, address: form.address },
+      });
+      setSuccess(true);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -36,83 +68,86 @@ export default function Profile() {
   };
 
   return (
-    <div className="page profile-page">
-      <div className="profile-hero">
-        <div className="profile-avatar">{user.name[0].toUpperCase()}</div>
-        <div className="profile-info">
-          {editing ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 8, padding: "6px 10px", color: "white", fontSize: 15, fontWeight: 700, width: "100%", outline: "none" }}
-              />
-              <input
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="Phone number"
-                style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 10px", color: "rgba(255,255,255,0.8)", fontSize: 13, width: "100%", outline: "none" }}
-              />
-              {error && <p style={{ color: "#fca5a5", fontSize: 12 }}>{error}</p>}
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <button onClick={saveProfile} disabled={saving} style={{ flex: 1, background: "#ff6b35", border: "none", borderRadius: 8, padding: "7px", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                  {saving ? "Saving…" : "Save"}
-                </button>
-                <button onClick={() => setEditing(false)} style={{ flex: 1, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "7px", color: "white", fontSize: 13, cursor: "pointer" }}>
-                  Cancel
-                </button>
-              </div>
+    <div className="profile-v2">
+      {/* ── Header banner ── */}
+      <div className="pv2-banner">
+        <button className="pv2-back" onClick={() => navigate("home")}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <span className="pv2-banner-title">My Profile</span>
+        <div className="pv2-avatar-wrap">
+          <div className="pv2-avatar">{form.name ? form.name[0].toUpperCase() : "👤"}</div>
+        </div>
+      </div>
+
+      {/* ── Form card ── */}
+      <div className="pv2-card">
+        {/* Quick stats */}
+        {stats && (
+          <div className="pv2-stats">
+            <div className="pv2-stat">
+              <span className="pv2-stat-num">{stats.completedOrders}</span>
+              <span className="pv2-stat-label">Orders</span>
             </div>
-          ) : (
-            <>
-              <h2>{user.name}</h2>
-              <p>{user.phone || "No phone set"}</p>
-              <p>{user.email}</p>
-              <button
-                onClick={() => setEditing(true)}
-                style={{ marginTop: 8, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "5px 14px", color: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 500, cursor: "pointer" }}
-              >
-                ✏️ Edit Profile
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="profile-stats">
-        <div className="profile-stat">
-          <span className="stat-num">{stats ? stats.completedOrders : "—"}</span>
-          <span className="stat-label">Orders</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="profile-stat">
-          <span className="stat-num">{stats ? `$${Number(stats.totalSpent).toFixed(0)}` : "—"}</span>
-          <span className="stat-label">Spent</span>
-        </div>
-        <div className="stat-divider" />
-        <div className="profile-stat">
-          <span className="stat-num">{user.role === "vendor" ? "🏪" : "👤"}</span>
-          <span className="stat-label">{user.role}</span>
-        </div>
-      </div>
-
-      {PROFILE_SECTIONS.map(s => (
-        <div key={s.title} className="profile-section">
-          <p className="profile-section-title">{s.title}</p>
-          <div className="profile-list">
-            {s.items.map(item => (
-              <button key={item.label} className="profile-item">
-                <span className="profile-item-icon">{item.icon}</span>
-                <span className="profile-item-label">{item.label}</span>
-                <span className="profile-item-arrow">›</span>
-              </button>
-            ))}
+            <div className="pv2-stat-divider" />
+            <div className="pv2-stat">
+              <span className="pv2-stat-num">${Number(stats.totalSpent).toFixed(0)}</span>
+              <span className="pv2-stat-label">Spent</span>
+            </div>
+            <div className="pv2-stat-divider" />
+            <div className="pv2-stat">
+              <span className="pv2-stat-num">{stats.activeOrders}</span>
+              <span className="pv2-stat-label">Active</span>
+            </div>
           </div>
-        </div>
-      ))}
+        )}
 
-      <button className="logout-btn" onClick={logout}>Sign Out</button>
-      <div style={{ height: 20 }} />
+        <Field label="Name" value={form.name} onChange={set("name")} placeholder="Your full name" />
+        <Field label="Email" value={form.email} type="email" onChange={() => {}} />
+        <Field label="Delivery address" value={form.address} onChange={set("address")} placeholder="Street, City" />
+        <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="+254 7xx xxx xxx" />
+        <Field label="Password" value={form.password} type="password" onChange={() => {}} />
+
+        {error && <p className="pv2-error">{error}</p>}
+
+        <div className="pv2-divider" />
+
+        <ListRow icon="💳" label="Payment Details" onClick={() => navigate("cart")} />
+        <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
+
+        <div className="pv2-actions">
+          <button className="pv2-edit-btn" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : (
+              <>
+                Edit Profile
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ marginLeft: 6 }}>
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </>
+            )}
+          </button>
+          <button className="pv2-logout-btn" onClick={logout}>
+            Log out
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="2.5" style={{ marginLeft: 6 }}>
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {success && (
+        <SuccessModal
+          title="Success!"
+          message="Your profile has been updated successfully."
+          buttonLabel="Go Back"
+          onClose={() => setSuccess(false)}
+        />
+      )}
     </div>
   );
 }
