@@ -18,6 +18,7 @@ function safeUser(row) {
     name: row.name,
     email: row.email,
     phone: row.phone,
+    address: row.address || null,
     role: row.role,
     businessName: row.business_name,
   };
@@ -97,17 +98,37 @@ router.get("/me", auth, async (req, res) => {
   res.json({ user: safeUser(rows[0]) });
 });
 
-module.exports = router;
-
-// PATCH /api/auth/me/update — update name / phone
+// PATCH /api/auth/me/update — update name / phone / address
 router.patch("/me/update", auth, async (req, res) => {
-  const { name, phone } = req.body;
+  const { name, phone, address } = req.body;
   const { rows } = await pool.query(
     `UPDATE users SET
-       name  = COALESCE($1, name),
-       phone = COALESCE($2, phone)
-     WHERE id=$3 RETURNING *`,
-    [name || null, phone || null, req.user.id]
+       name    = COALESCE($1, name),
+       phone   = COALESCE($2, phone),
+       address = COALESCE($3, address)
+     WHERE id=$4 RETURNING *`,
+    [name || null, phone || null, address || null, req.user.id]
   );
   res.json({ user: safeUser(rows[0]) });
 });
+
+// GET /api/auth/me/stats — order count / spend summary (customer)
+router.get("/me/stats", auth, async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'Delivered')                         AS completed_orders,
+       COUNT(*) FILTER (WHERE status NOT IN ('Delivered','Cancelled'))      AS active_orders,
+       COALESCE(SUM(total) FILTER (WHERE status = 'Delivered'), 0)          AS total_spent
+     FROM orders
+     WHERE customer_id = $1`,
+    [req.user.id]
+  );
+  const r = rows[0];
+  res.json({
+    completedOrders: Number(r.completed_orders),
+    activeOrders:    Number(r.active_orders),
+    totalSpent:      Number(r.total_spent),
+  });
+});
+
+module.exports = router;

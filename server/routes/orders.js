@@ -42,19 +42,46 @@ router.get("/vendor/active", auth, requireRole("vendor"), async (req, res) => {
   res.json({ orders });
 });
 
-// GET /api/orders/vendor/history
+// GET /api/orders/vendor/history — past orders + revenue stats
 router.get("/vendor/history", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
+  const vendorId = vRows[0].id;
+
   const { rows } = await pool.query(
     `SELECT o.*, u.name as customer_name
      FROM orders o JOIN users u ON u.id=o.customer_id
      WHERE o.vendor_id=$1 AND o.status IN ('Delivered','Cancelled')
      ORDER BY o.created_at DESC LIMIT 50`,
-    [vRows[0].id]
+    [vendorId]
   );
   const orders = await Promise.all(rows.map(o => fullOrder(o.id)));
-  res.json({ orders });
+
+  const { rows: statsRows } = await pool.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'Delivered')                                                    AS total_orders,
+       COALESCE(SUM(total) FILTER (WHERE status = 'Delivered'), 0)                                      AS total_revenue,
+       COUNT(*) FILTER (WHERE status = 'Delivered' AND created_at >= NOW() - INTERVAL '7 days')          AS week_orders,
+       COALESCE(SUM(total) FILTER (WHERE status = 'Delivered' AND created_at >= NOW() - INTERVAL '7 days'), 0) AS week_revenue,
+       COUNT(*) FILTER (WHERE status = 'Delivered' AND created_at >= date_trunc('day', NOW()))          AS today_orders,
+       COALESCE(SUM(total) FILTER (WHERE status = 'Delivered' AND created_at >= date_trunc('day', NOW())), 0) AS today_revenue
+     FROM orders
+     WHERE vendor_id = $1`,
+    [vendorId]
+  );
+  const s = statsRows[0];
+
+  res.json({
+    orders,
+    stats: {
+      totalOrders:  Number(s.total_orders),
+      totalRevenue: Number(s.total_revenue),
+      weekOrders:   Number(s.week_orders),
+      weekRevenue:  Number(s.week_revenue),
+      todayOrders:  Number(s.today_orders),
+      todayRevenue: Number(s.today_revenue),
+    },
+  });
 });
 
 // ─── CUSTOMER ROUTES ──────────────────────────────────────────────────────────
@@ -139,6 +166,51 @@ router.get("/:id", auth, async (req, res) => {
     return res.status(403).json({ error: "Not your order." });
   }
   res.json({ order });
+});
+
+// POST /api/orders/:id/review — customer reviews a delivered order
+router.post("/:id/review", auth, requireRole("customer"), async (req, res) => {
+  const rating  = Number(req.body.rating);
+  const comment = String(req.body.comment || "").trim();
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "Rating must be 1–5." });
+  }
+
+  const { rows: oRows } = await pool.query(
+    `SELECT o.id, o.customer_id, o.vendor_id, o.status, v.user_id AS vendor_user_id
+     FROM orders o
+     JOIN vendors v ON v.id = o.vendor_id
+     WHERE o.id = $1`,
+    [req.params.id]
+  );
+  const order = oRows[0];
+  if (!order) return res.status(404).json({ error: "Order not found." });
+  if (order.customer_id !== req.user.id) return res.status(403).json({ error: "Not your order." });
+  if (order.status !== "Delivered") return res.status(400).json({ error: "You can only review delivered orders." });
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO reviews (order_id, vendor_user_id, customer_user_id, rating, comment)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [order.id, order.vendor_user_id, req.user.id, rating, comment]
+    );
+
+    // Recompute vendor aggregate rating
+    await pool.query(
+      `UPDATE vendors SET
+         rating       = (SELECT ROUND(AVG(rating)::numeric, 1) FROM reviews WHERE vendor_user_id=$1),
+         review_count = (SELECT COUNT(*) FROM reviews WHERE vendor_user_id=$1)
+       WHERE user_id = $1`,
+      [order.vendor_user_id]
+    );
+
+    res.status(201).json({ review: rows[0] });
+  } catch (err) {
+    if (err.code === "23505") return res.status(409).json({ error: "You have already reviewed this order." });
+    console.error("Review error:", err.message);
+    res.status(500).json({ error: "Failed to submit review." });
+  }
 });
 
 // PATCH /api/orders/:id/status  — vendor advances

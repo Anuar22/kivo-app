@@ -9,22 +9,31 @@ export default function VendorDashboard({ showToast }) {
   const [vtab, setVtab] = useState("orders");
   const businessName = user?.businessName || user?.name || "My Restaurant";
 
+  const tabs = [
+    { id: "orders",  label: "Orders" },
+    { id: "menu",    label: "Menu" },
+    { id: "profile", label: "Profile" },
+  ];
+
   return (
     <>
       <div className="vd-header">
         <div className="vd-header-top">
-          <div className="vd-logo">
-            <span>K</span><em>ivo</em>{" "}
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", fontFamily: "DM Sans, sans-serif", fontWeight: 400 }}>Vendor</span>
-          </div>
+          <div className="vd-logo">Kivo<span> Vendor</span></div>
           <button className="vendor-badge" onClick={logout}>
             <div className="online-dot" />{businessName}
           </button>
         </div>
         <div className="vd-tabs">
-          <button className={`vd-tab ${vtab === "orders"  ? "active" : ""}`} onClick={() => setVtab("orders")}>Orders</button>
-          <button className={`vd-tab ${vtab === "menu"    ? "active" : ""}`} onClick={() => setVtab("menu")}>Menu</button>
-          <button className={`vd-tab ${vtab === "profile" ? "active" : ""}`} onClick={() => setVtab("profile")}>Profile</button>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              className={`vd-tab ${vtab === t.id ? "active" : ""}`}
+              onClick={() => setVtab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 

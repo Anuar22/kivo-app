@@ -6,6 +6,7 @@ const { migrate } = require("./db");
 const authRoutes    = require("./routes/auth");
 const vendorRoutes  = require("./routes/vendors");
 const orderRoutes   = require("./routes/orders");
+const paymentRoutes = require("./routes/payments");
 const { router: sseRouter } = require("./routes/sse");
 
 const app = express();
@@ -34,6 +35,7 @@ app.use(express.json());
 app.use("/api/auth",    authRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/orders",  orderRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use("/api/sse",     sseRouter);
 
 app.get("/health", (_, res) => res.json({ ok: true, ts: new Date() }));

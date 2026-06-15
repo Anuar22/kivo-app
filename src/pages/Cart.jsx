@@ -169,12 +169,11 @@ export default function Cart({ navigate }) {
     setLoading(true);
     try {
       await ordersApi.place({
-        vendorName,
+        vendorId,
         address,
         paymentMethod: payMethod,
         stripePaymentId,
-        total: grandTotal,
-        items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+        items: items.map(i => ({ menuItemId: i.id, qty: i.qty })),
       });
       setPlaced(true);
     } catch (e) {

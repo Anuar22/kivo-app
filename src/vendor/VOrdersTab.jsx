@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ordersApi, apiRequest, subscribeVendorSSE } from "../api/index.js";
+import { ordersApi, subscribeVendorSSE } from "../api/index.js";
 
 function VStatusPill({ status }) {
   const map = {
@@ -92,9 +92,9 @@ export default function VOrdersTab({ showToast }) {
   // ── Active orders ──────────────────────────────────────────────────────────
   const loadActive = useCallback(async () => {
     try {
-      const data = await apiRequest("/api/vendor/orders");
-      // Active = not delivered/cancelled/collected
-      const active = data.filter(o => !["Delivered", "Collected", "Cancelled"].includes(o.status));
+      const { orders: data } = await ordersApi.vendorActive();
+      // Active = not delivered/cancelled
+      const active = data.filter(o => !["Delivered", "Cancelled"].includes(o.status));
       setOrders(active);
     } catch {
       showToast("⚠️ Failed to load orders");
@@ -108,7 +108,7 @@ export default function VOrdersTab({ showToast }) {
     if (histLoading) return;
     setHistLoading(true);
     try {
-      const { orders: list, stats: s } = await apiRequest("/api/vendor/orders/history");
+      const { orders: list, stats: s } = await ordersApi.vendorHistory();
       setHistory(list);
       setStats(s);
     } catch {
@@ -143,8 +143,8 @@ export default function VOrdersTab({ showToast }) {
     const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1];
     if (!nextStatus) return;
     try {
-      await apiRequest(`/api/vendor/orders/${order.id}`, { method: "PATCH", body: { status: nextStatus } });
-      if (["Delivered", "Collected"].includes(nextStatus)) {
+      await ordersApi.setStatus(order.id, nextStatus);
+      if (nextStatus === "Delivered") {
         setOrders(prev => prev.filter(o => o.id !== order.id));
         showToast("🛵 Order delivered — done!");
       } else {

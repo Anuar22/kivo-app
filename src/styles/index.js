@@ -413,21 +413,27 @@ const CSS = `
   .logout-btn:hover { background: #fef2f2; }
 
   /* ── VENDOR DASHBOARD ── */
-  .vd-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 32px; }
+  .vd-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; background: #fff; min-height: 100svh; }
   .vd-header {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d1a0a 100%);
-    padding: 20px 16px 0;
-    position: sticky; top: 36px; z-index: 50;
+    background: white;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 18px 16px 14px;
+    position: sticky; top: 0; z-index: 50;
   }
-  .vd-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .vd-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
-  .vd-logo span { color: var(--orange); }
-  .vd-logo em { color: white; font-style: normal; }
-  .vendor-badge { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .vd-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .vd-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: #0f0f0f; letter-spacing: -0.5px; }
+  .vd-logo span { color: var(--orange); font-weight: 600; font-size: 13px; letter-spacing: 0; font-family: 'DM Sans', sans-serif; }
+  .vendor-badge { background: #fdecea; border: 1px solid #ffd9d6; border-radius: 100px; padding: 6px 14px; font-size: 12px; color: #c62828; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
   .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .vd-tabs { display: flex; gap: 0; }
-  .vd-tab { flex: 1; padding: 12px 6px; border: none; background: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5); border-bottom: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-  .vd-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .vd-tabs { display: flex; gap: 8px; }
+  .vd-tab {
+    flex: 1; padding: 9px 6px; border-radius: 100px;
+    border: 1.5px solid #f0f0f0; background: white;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; color: #999;
+    transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .vd-tab.active { color: white; background: var(--orange); border-color: var(--orange); box-shadow: 0 4px 12px rgba(229,57,53,0.28); }
   .tab-badge { background: var(--orange); color: white; font-size: 10px; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
   .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 14px; }
