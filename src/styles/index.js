@@ -51,80 +51,78 @@ const CSS = `
     box-shadow: 0 0 60px rgba(0,0,0,0.14);
   }
 
-  /* ── ACCOUNT ENTRY ── */
-  .auth-screen {
-    min-height: 100svh;
-    background:
-      linear-gradient(145deg, rgba(229,57,53,0.18), rgba(255,255,255,0) 44%),
-      linear-gradient(135deg, #141414 0%, #2a190d 100%);
-    padding: 28px 18px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    color: white;
+  /* ── AUTH V2 — matches the white/red design language ── */
+  .auth-v2 {
+    background: #fff; min-height: 100svh;
+    padding: 0 20px 40px;
+    display: flex; flex-direction: column;
   }
-  .auth-brand { margin-bottom: 28px; }
-  .auth-logo { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800; line-height: 1; margin-bottom: 8px; }
-  .auth-logo span { color: var(--orange); }
-  .auth-brand p { color: rgba(255,255,255,0.62); font-size: 14px; line-height: 1.45; max-width: 310px; }
-  .auth-panel {
-    background: rgba(255,255,255,0.96);
-    color: var(--text);
-    border: 1px solid rgba(255,255,255,0.24);
-    border-radius: 18px;
-    padding: 16px;
-    box-shadow: 0 18px 50px rgba(0,0,0,0.26);
+  .av2-header { padding: 48px 0 28px; text-align: center; }
+  .av2-logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 36px;
+    color: #0f0f0f; letter-spacing: -0.5px; margin-bottom: 8px;
   }
-  .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg); padding: 4px; border-radius: 12px; margin-bottom: 14px; }
-  .auth-tab { border: none; border-radius: 9px; padding: 10px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; }
-  .auth-tab.active { background: var(--card); color: var(--text); box-shadow: var(--shadow-sm); }
-  .role-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .role-choice button {
-    border: 1.5px solid var(--border);
-    background: var(--card);
-    border-radius: 12px;
-    padding: 11px 10px;
-    color: var(--muted);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
+  .av2-tagline { font-size: 13px; color: #999; line-height: 1.5; max-width: 260px; margin: 0 auto; }
+
+  .av2-card {
+    background: white; border: 1.5px solid #f0f0f0; border-radius: 22px;
+    padding: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.06);
   }
-  .role-choice button.active { border-color: var(--orange); color: var(--orange); background: var(--orange-soft); }
-  .auth-form { display: flex; flex-direction: column; gap: 10px; }
-  .auth-input {
-    width: 100%;
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 13px 14px;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 14px;
-    outline: none;
+  .av2-tabs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    background: #f7f7f7; padding: 4px; border-radius: 14px; margin-bottom: 18px;
   }
-  .auth-input:focus { border-color: var(--orange); background: white; }
-  .auth-error {
-    background: var(--red-soft);
-    color: #991b1b;
-    border: 1px solid #fecaca;
-    border-radius: 10px;
-    padding: 9px 11px;
-    font-size: 12px;
-    line-height: 1.4;
+  .av2-tab {
+    border: none; border-radius: 11px; padding: 11px;
+    background: transparent; color: #999; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.18s;
   }
-  .auth-submit {
-    border: none;
-    border-radius: 13px;
-    padding: 14px;
-    background: linear-gradient(135deg, #e53935, #c62828);
-    color: white;
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 800;
-    cursor: pointer;
-    box-shadow: 0 10px 26px rgba(229,57,53,0.3);
+  .av2-tab.active { background: white; color: #0f0f0f; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  .av2-role-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .av2-role-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    border: 1.5px solid #f0f0f0; background: white; border-radius: 14px;
+    padding: 14px 10px; color: #999; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.18s;
   }
-  .auth-submit:disabled { opacity: 0.65; cursor: wait; }
-  .auth-hint { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 12px; }
+  .av2-role-icon { font-size: 22px; }
+  .av2-role-btn.active { border-color: #e53935; color: #e53935; background: #fdecea; }
+
+  .av2-form { display: flex; flex-direction: column; gap: 14px; }
+  .av2-field { display: flex; flex-direction: column; gap: 5px; }
+  .av2-label { font-size: 11px; font-weight: 600; color: #aaa; letter-spacing: 0.2px; }
+  .av2-input {
+    width: 100%; box-sizing: border-box;
+    border: 1.5px solid #f0f0f0; border-radius: 12px;
+    padding: 13px 14px; background: #f7f7f7; color: #0f0f0f;
+    font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .av2-input:focus { border-color: #e53935; background: white; }
+  .av2-input::placeholder { color: #bbb; }
+
+  .av2-error {
+    background: #fdecea; color: #c62828; border: 1px solid #ffcdd2;
+    border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.4;
+  }
+
+  .av2-submit {
+    border: none; border-radius: 14px; padding: 15px;
+    background: #e53935; color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; box-shadow: 0 8px 20px rgba(229,57,53,0.3);
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .av2-submit:active { transform: scale(0.98); }
+  .av2-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .av2-hint { color: #999; font-size: 13px; line-height: 1.5; margin-top: 16px; text-align: center; }
+  .av2-hint-link {
+    background: none; border: none; color: #e53935; font-weight: 700;
+    font-size: 13px; cursor: pointer; padding: 0; font-family: 'DM Sans', sans-serif;
+  }
+
   .boot-screen { min-height: 100svh; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; }
 
   /* ── ACCOUNT POPOVER ── */

@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
 
+function Field({ label, ...props }) {
+  return (
+    <div className="av2-field">
+      <label className="av2-label">{label}</label>
+      <input className="av2-input" {...props} />
+    </div>
+  );
+}
+
 export default function AuthScreen() {
   const { login, register } = useAccount();
   const [mode, setMode] = useState("register");
@@ -29,44 +38,107 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="auth-screen">
-      <div className="auth-brand">
-        <div className="auth-logo"><span>K</span>ivo</div>
-        <p>One account for food delivery, restaurant orders, and vendor operations.</p>
+    <div className="auth-v2">
+      {/* ── Header ── */}
+      <div className="av2-header">
+        <div className="av2-logo">Kivo</div>
+        <p className="av2-tagline">
+          {mode === "login" ? "Welcome back! Sign in to continue" : "One account for ordering and selling food"}
+        </p>
       </div>
 
-      <div className="auth-panel">
-        <div className="auth-tabs">
-          <button className={`auth-tab ${mode === "register" ? "active" : ""}`} onClick={() => setMode("register")}>Create account</button>
-          <button className={`auth-tab ${mode === "login" ? "active" : ""}`} onClick={() => setMode("login")}>Sign in</button>
+      {/* ── Card ── */}
+      <div className="av2-card">
+        <div className="av2-tabs">
+          <button className={`av2-tab ${mode === "register" ? "active" : ""}`} onClick={() => setMode("register")}>
+            Create account
+          </button>
+          <button className={`av2-tab ${mode === "login" ? "active" : ""}`} onClick={() => setMode("login")}>
+            Sign in
+          </button>
         </div>
 
-        <form className="auth-form" onSubmit={submit}>
+        <form className="av2-form" onSubmit={submit}>
           {mode === "register" && (
             <>
-              <div className="role-choice">
-                <button type="button" className={role === "customer" ? "active" : ""} onClick={() => setRole("customer")}>👤 Customer</button>
-                <button type="button" className={role === "vendor" ? "active" : ""} onClick={() => setRole("vendor")}>🏪 Vendor</button>
+              <div className="av2-role-choice">
+                <button
+                  type="button"
+                  className={`av2-role-btn ${role === "customer" ? "active" : ""}`}
+                  onClick={() => setRole("customer")}
+                >
+                  <span className="av2-role-icon">👤</span>
+                  <span>Customer</span>
+                </button>
+                <button
+                  type="button"
+                  className={`av2-role-btn ${role === "vendor" ? "active" : ""}`}
+                  onClick={() => setRole("vendor")}
+                >
+                  <span className="av2-role-icon">🏪</span>
+                  <span>Vendor</span>
+                </button>
               </div>
-              <input className="auth-input" value={form.name} onChange={e => update("name", e.target.value)} placeholder="Full name" autoComplete="name" />
-              <input className="auth-input" value={form.phone} onChange={e => update("phone", e.target.value)} placeholder="Phone number" autoComplete="tel" />
+
+              <Field
+                label="Full name"
+                value={form.name}
+                onChange={e => update("name", e.target.value)}
+                placeholder="Your full name"
+                autoComplete="name"
+              />
+              <Field
+                label="Phone number"
+                value={form.phone}
+                onChange={e => update("phone", e.target.value)}
+                placeholder="+254 7xx xxx xxx"
+                autoComplete="tel"
+              />
               {role === "vendor" && (
-                <input className="auth-input" value={form.businessName} onChange={e => update("businessName", e.target.value)} placeholder="Restaurant or shop name" />
+                <Field
+                  label="Restaurant / shop name"
+                  value={form.businessName}
+                  onChange={e => update("businessName", e.target.value)}
+                  placeholder="e.g. Mama's Kitchen"
+                />
               )}
             </>
           )}
 
-          <input className="auth-input" type="email" value={form.email} onChange={e => update("email", e.target.value)} placeholder="Email address" autoComplete="email" />
-          <input className="auth-input" type="password" value={form.password} onChange={e => update("password", e.target.value)} placeholder="Password" autoComplete={mode === "login" ? "current-password" : "new-password"} />
+          <Field
+            label="Email address"
+            type="email"
+            value={form.email}
+            onChange={e => update("email", e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
+          <Field
+            label="Password"
+            type="password"
+            value={form.password}
+            onChange={e => update("password", e.target.value)}
+            placeholder="••••••••"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+          />
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <p className="av2-error">{error}</p>}
 
-          <button className="auth-submit" disabled={loading}>
-            {loading ? "Working..." : mode === "login" ? "Sign in" : `Create ${role} account`}
+          <button className="av2-submit" disabled={loading}>
+            {loading ? "Working…" : mode === "login" ? "Sign In" : `Create ${role === "vendor" ? "Vendor" : "Customer"} Account`}
           </button>
         </form>
 
-        <p className="auth-hint">Use a real email and phone format now. Later we can add OTP verification, permissions, and payment identity checks.</p>
+        <p className="av2-hint">
+          {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+          <button
+            type="button"
+            className="av2-hint-link"
+            onClick={() => setMode(mode === "login" ? "register" : "login")}
+          >
+            {mode === "login" ? "Create one" : "Sign in"}
+          </button>
+        </p>
       </div>
     </div>
   );

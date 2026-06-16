@@ -38,8 +38,13 @@ export function AccountProvider({ children }) {
     setUser(null);
   };
 
+  // Merge updated fields (e.g. after a profile edit) into the live user object
+  const updateUser = (patch) => {
+    setUser(prev => prev ? { ...prev, ...patch } : prev);
+  };
+
   return (
-    <AccountCtx.Provider value={{ user, initializing, register, login, logout }}>
+    <AccountCtx.Provider value={{ user, initializing, register, login, logout, updateUser }}>
       {children}
     </AccountCtx.Provider>
   );

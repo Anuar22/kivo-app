@@ -34,6 +34,8 @@ export function Navbar({ screen, navigate }) {
 export function BottomNav({ screen, navigate }) {
   const { count } = useCart();
 
+  if (screen === "cart") return null; // Cart has its own sticky Pay Now bar
+
   const left = [
     {
       id: "home", label: "Home",
