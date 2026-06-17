@@ -1,6 +1,18 @@
 const router = require("express").Router();
+const multer = require("multer");
 const { pool } = require("../db");
 const { auth, requireRole } = require("../middleware/auth");
+const { uploadBuffer, configured: cloudinaryConfigured } = require("../cloudinary");
+
+// Files are held in memory only long enough to stream to Cloudinary — never written to disk.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB cap
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) return cb(new Error("Only image files are allowed."));
+    cb(null, true);
+  },
+});
 
 // ─── VENDOR SELF-MANAGEMENT (must come BEFORE /:id to avoid conflict) ─────────
 
@@ -63,16 +75,54 @@ router.get("/me/menu", auth, requireRole("vendor"), async (req, res) => {
   res.json({ menu: rows });
 });
 
+// POST /api/vendors/me/menu/upload-photo — uploads a single image, returns its URL.
+// Frontend calls this first, then includes the returned url as imageUrl when
+// creating/updating the menu item.
+router.post("/me/menu/upload-photo", auth, requireRole("vendor"), upload.single("photo"), async (req, res) => {
+  if (!cloudinaryConfigured) {
+    return res.status(503).json({ error: "Photo uploads are not configured on this server." });
+  }
+  if (!req.file) return res.status(400).json({ error: "No image file received." });
+
+  try {
+    const result = await uploadBuffer(req.file.buffer, "kivo/menu-items");
+    res.json({ url: result.secure_url });
+  } catch (err) {
+    console.error("Menu photo upload error:", err.message);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
+// POST /api/vendors/me/cover-photo — uploads the vendor's storefront cover image
+router.post("/me/cover-photo", auth, requireRole("vendor"), upload.single("photo"), async (req, res) => {
+  if (!cloudinaryConfigured) {
+    return res.status(503).json({ error: "Photo uploads are not configured on this server." });
+  }
+  if (!req.file) return res.status(400).json({ error: "No image file received." });
+
+  try {
+    const result = await uploadBuffer(req.file.buffer, "kivo/vendor-covers");
+    const { rows } = await pool.query(
+      "UPDATE vendors SET cover_image_url=$1 WHERE user_id=$2 RETURNING *",
+      [result.secure_url, req.user.id]
+    );
+    res.json({ url: result.secure_url, vendor: rows[0] });
+  } catch (err) {
+    console.error("Cover photo upload error:", err.message);
+    res.status(500).json({ error: "Upload failed. Please try again." });
+  }
+});
+
 // POST /api/vendors/me/menu
 router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
-  const { name, description, price, image, popular, available } = req.body;
+  const { name, description, price, image, imageUrl, popular, available } = req.body;
   if (!name || !price) return res.status(400).json({ error: "Name and price required." });
   const { rows } = await pool.query(
-    `INSERT INTO menu_items (vendor_id, name, description, price, image, popular, available)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [vRows[0].id, name, description, price, image || "🍽️", !!popular, available !== false]
+    `INSERT INTO menu_items (vendor_id, name, description, price, image, image_url, popular, available)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [vRows[0].id, name, description, price, image || "🍽️", imageUrl || null, !!popular, available !== false]
   );
   res.status(201).json({ item: rows[0] });
 });
@@ -81,17 +131,18 @@ router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
 router.patch("/me/menu/:itemId", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
-  const { name, description, price, image, popular, available } = req.body;
+  const { name, description, price, image, imageUrl, popular, available } = req.body;
   const { rows } = await pool.query(
     `UPDATE menu_items SET
        name        = COALESCE($1, name),
        description = COALESCE($2, description),
        price       = COALESCE($3, price),
        image       = COALESCE($4, image),
-       popular     = COALESCE($5, popular),
-       available   = COALESCE($6, available)
-     WHERE id=$7 AND vendor_id=$8 RETURNING *`,
-    [name, description, price, image, popular, available, req.params.itemId, vRows[0].id]
+       image_url   = COALESCE($5, image_url),
+       popular     = COALESCE($6, popular),
+       available   = COALESCE($7, available)
+     WHERE id=$8 AND vendor_id=$9 RETURNING *`,
+    [name, description, price, image, imageUrl, popular, available, req.params.itemId, vRows[0].id]
   );
   if (!rows[0]) return res.status(404).json({ error: "Item not found." });
   res.json({ item: rows[0] });

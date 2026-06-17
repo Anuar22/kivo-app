@@ -218,7 +218,11 @@ export default function Home({ navigate }) {
                   <div key={v.id} className="hv2-card" onClick={() => navigate("vendor", v)}>
                     {/* Food image area */}
                     <div className="hv2-card-img">
-                      <span className="hv2-card-emoji">{v.image || "🍽️"}</span>
+                      {v.cover_image_url ? (
+                        <img src={v.cover_image_url} alt={v.name} className="hv2-card-photo" />
+                      ) : (
+                        <span className="hv2-card-emoji">{v.image || "🍽️"}</span>
+                      )}
                       {v.tag && (
                         <span className="hv2-card-badge" style={{ background: v.tagColor }}>
                           {v.tag}

@@ -13,15 +13,46 @@ export async function apiRequest(path, { method = "GET", body } = {}) {
   });
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Something went wrong.");
+  if (!res.ok) {
+    const err = new Error(data.error || "Something went wrong.");
+    err.data = data; // preserves extra fields like pendingVerification/email for callers that need them
+    throw err;
+  }
+  return data;
+}
+
+// Uploads a File/Blob as multipart/form-data — used for menu photos and vendor
+// cover images. Separate from apiRequest because it must NOT set
+// Content-Type: application/json or stringify the body.
+export async function apiUpload(path, file, fieldName = "photo") {
+  const token = localStorage.getItem("kivo_token");
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || "Upload failed.");
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  me:       ()     => apiRequest("/api/auth/me"),
-  login:    (body) => apiRequest("/api/auth/login",    { method: "POST", body }),
-  register: (body) => apiRequest("/api/auth/register", { method: "POST", body }),
+  me:             ()     => apiRequest("/api/auth/me"),
+  login:          (body) => apiRequest("/api/auth/login",          { method: "POST", body }),
+  register:       (body) => apiRequest("/api/auth/register",       { method: "POST", body }),
+  verifyEmail:    (body) => apiRequest("/api/auth/verify-email",   { method: "POST", body }),
+  resendCode:     (body) => apiRequest("/api/auth/resend-code",    { method: "POST", body }),
+  forgotPassword: (body) => apiRequest("/api/auth/forgot-password",{ method: "POST", body }),
+  resetPassword:  (body) => apiRequest("/api/auth/reset-password", { method: "POST", body }),
 };
 
 // ─── VENDORS ─────────────────────────────────────────────────────────────────
@@ -36,6 +67,8 @@ export const vendorsApi = {
   get:           (id)        => apiRequest(`/api/vendors/${id}`),
   myProfile:     ()          => apiRequest("/api/vendors/me/profile"),
   updateProfile: (body)      => apiRequest("/api/vendors/me/profile", { method: "PATCH", body }),
+  uploadMenuPhoto:  (file)   => apiUpload("/api/vendors/me/menu/upload-photo", file),
+  uploadCoverPhoto: (file)   => apiUpload("/api/vendors/me/cover-photo", file),
   myMenu:        ()          => apiRequest("/api/vendors/me/menu"),
   addItem:       (body)      => apiRequest("/api/vendors/me/menu",           { method: "POST",   body }),
   updateItem:    (id, body)  => apiRequest(`/api/vendors/me/menu/${id}`,     { method: "PATCH",  body }),

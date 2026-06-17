@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 
@@ -33,6 +34,34 @@ function ListRow({ icon, label, onClick }) {
         <path d="M9 18l6-6-6-6"/>
       </svg>
     </button>
+  );
+}
+
+function ThemeRow({ theme, onToggle }) {
+  const isDark = theme === "dark";
+  return (
+    <div className="pv2-row" style={{ cursor: "default" }}>
+      <span className="pv2-row-icon">{isDark ? "🌙" : "☀️"}</span>
+      <span className="pv2-row-label">Dark mode</span>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label="Toggle dark mode"
+        style={{
+          width: 44, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
+          background: isDark ? "var(--orange)" : "var(--line)",
+          position: "relative", flexShrink: 0, transition: "background 0.2s",
+        }}
+      >
+        <span
+          style={{
+            position: "absolute", top: 3, left: isDark ? 21 : 3,
+            width: 20, height: 20, borderRadius: "50%", background: "white",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "left 0.2s",
+          }}
+        />
+      </button>
+    </div>
   );
 }
 
@@ -73,6 +102,7 @@ async function reverseGeocode(lat, lng) {
 
 export default function Profile({ navigate }) {
   const { user, logout, updateUser } = useAccount();
+  const { theme, toggleTheme } = useTheme();
   const [form, setForm] = useState({
     name: user.name || "",
     email: user.email || "",
@@ -207,6 +237,7 @@ export default function Profile({ navigate }) {
 
         <div className="pv2-divider" />
 
+        <ThemeRow theme={theme} onToggle={toggleTheme} />
         <ListRow icon="💳" label="Payment Details" onClick={() => navigate("cart")} />
         <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
 

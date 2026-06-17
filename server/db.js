@@ -18,8 +18,21 @@ async function migrate() {
       password    TEXT NOT NULL,
       role        TEXT NOT NULL DEFAULT 'customer',   -- 'customer' | 'vendor'
       business_name TEXT,
+      email_verified BOOLEAN NOT NULL DEFAULT FALSE,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS otp_codes (
+      id          SERIAL PRIMARY KEY,
+      email       TEXT NOT NULL,
+      code        TEXT NOT NULL,
+      purpose     TEXT NOT NULL DEFAULT 'verify_email', -- 'verify_email' | 'reset_password'
+      expires_at  TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS otp_codes_email_idx ON otp_codes(email);
 
     CREATE TABLE IF NOT EXISTS vendors (
       id            SERIAL PRIMARY KEY,
@@ -39,6 +52,7 @@ async function migrate() {
       latitude      NUMERIC(10,7),
       longitude     NUMERIC(10,7),
       address       TEXT,
+      cover_image_url TEXT,
       created_at    TIMESTAMPTZ DEFAULT NOW()
     );
 
@@ -49,6 +63,7 @@ async function migrate() {
       description TEXT,
       price       NUMERIC(8,2) NOT NULL,
       image       TEXT DEFAULT '🍽️',
+      image_url   TEXT,
       popular     BOOLEAN DEFAULT FALSE,
       available   BOOLEAN DEFAULT TRUE,
       created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -107,9 +122,12 @@ async function migrate() {
   // ── Safe column additions for existing databases ──────────────────────────
   const safeAlters = [
     "alter table users   add column if not exists address   text",
+    "alter table users   add column if not exists email_verified boolean not null default false",
     "alter table vendors add column if not exists latitude  numeric(10,7)",
     "alter table vendors add column if not exists longitude numeric(10,7)",
     "alter table vendors add column if not exists address   text",
+    "alter table vendors add column if not exists cover_image_url text",
+    "alter table menu_items add column if not exists image_url text",
     "alter table reviews add column if not exists id serial",  // no-op if exists
   ];
   for (const sql of safeAlters) {

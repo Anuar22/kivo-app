@@ -23,14 +23,36 @@ export function AccountProvider({ children }) {
     setUser(user);
   };
 
+  // Register no longer logs the user in immediately — it returns
+  // { pendingVerification: true, email } so the UI can show the OTP screen.
   const register = async (form) => {
-    const data = await authApi.register(form);
-    completeAuth(data);
+    return await authApi.register(form);
   };
 
   const login = async (form) => {
     const data = await authApi.login(form);
     completeAuth(data);
+    return data;
+  };
+
+  const verifyEmail = async (email, code) => {
+    const data = await authApi.verifyEmail({ email, code });
+    completeAuth(data);
+    return data;
+  };
+
+  const resendCode = async (email, purpose = "verify_email") => {
+    return await authApi.resendCode({ email, purpose });
+  };
+
+  const forgotPassword = async (email) => {
+    return await authApi.forgotPassword({ email });
+  };
+
+  const resetPassword = async (email, code, newPassword) => {
+    const data = await authApi.resetPassword({ email, code, newPassword });
+    completeAuth(data);
+    return data;
   };
 
   const logout = () => {
@@ -44,7 +66,10 @@ export function AccountProvider({ children }) {
   };
 
   return (
-    <AccountCtx.Provider value={{ user, initializing, register, login, logout, updateUser }}>
+    <AccountCtx.Provider value={{
+      user, initializing, register, login, logout, updateUser,
+      verifyEmail, resendCode, forgotPassword, resetPassword,
+    }}>
       {children}
     </AccountCtx.Provider>
   );

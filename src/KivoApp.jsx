@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AccountProvider, useAccount } from "./context/AccountContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 import CSS from "./styles/index.js";
 import AuthScreen from "./components/AuthScreen.jsx";
 import { Navbar, BottomNav } from "./components/Navigation.jsx";
@@ -78,10 +79,12 @@ function KivoShell() {
 
 export default function KivoApp() {
   return (
-    <AccountProvider>
-      <CartProvider>
-        <KivoShell />
-      </CartProvider>
-    </AccountProvider>
+    <ThemeProvider>
+      <AccountProvider>
+        <CartProvider>
+          <KivoShell />
+        </CartProvider>
+      </AccountProvider>
+    </ThemeProvider>
   );
 }

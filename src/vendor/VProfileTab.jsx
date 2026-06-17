@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { vendorsApi } from "../api/index.js";
+import { useTheme } from "../context/ThemeContext.jsx";
 
 const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
@@ -145,11 +146,14 @@ function AddressSearch({ onSelect }) {
 const CATEGORIES = ["African", "Burgers", "Pizza", "Chicken", "Vegan", "Drinks", "Desserts", "Other"];
 
 export default function VProfileTab({ showToast }) {
+  const { theme, toggleTheme } = useTheme();
   const [profile, setProfile]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [locating, setLocating] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [form, setForm]         = useState(null);
+  const coverInputRef = useRef(null);
 
   useEffect(() => {
     vendorsApi.myProfile()
@@ -167,6 +171,7 @@ export default function VProfileTab({ showToast }) {
           address:      vendor.address      || "",
           latitude:     vendor.latitude     != null ? Number(vendor.latitude)  : null,
           longitude:    vendor.longitude    != null ? Number(vendor.longitude) : null,
+          coverImageUrl: vendor.cover_image_url || "",
         });
       })
       .catch(() => showToast("⚠️ Could not load profile"))
@@ -174,6 +179,26 @@ export default function VProfileTab({ showToast }) {
   }, []);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleCoverUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("⚠️ Image must be under 5MB");
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const { url, vendor } = await vendorsApi.uploadCoverPhoto(file);
+      set("coverImageUrl", url);
+      setProfile(vendor);
+      showToast("📸 Cover photo updated!");
+    } catch (e) {
+      showToast("⚠️ " + e.message);
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   // Use device GPS
   const useMyLocation = () => {
@@ -262,7 +287,88 @@ export default function VProfileTab({ showToast }) {
         </div>
       </div>
 
+      {/* ── Appearance ── */}
+      <div
+        className="form-group"
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: "var(--card)", border: "1px solid var(--border)",
+          borderRadius: 10, padding: "12px 14px", marginBottom: 20,
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+          {theme === "dark" ? "🌙" : "☀️"} Dark mode
+        </span>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label="Toggle dark mode"
+          style={{
+            width: 44, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
+            background: theme === "dark" ? "var(--orange)" : "var(--border)",
+            position: "relative", flexShrink: 0, transition: "background 0.2s",
+          }}
+        >
+          <span
+            style={{
+              position: "absolute", top: 3, left: theme === "dark" ? 21 : 3,
+              width: 20, height: 20, borderRadius: "50%", background: "white",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "left 0.2s",
+            }}
+          />
+        </button>
+      </div>
+
       {/* ── Basic info ── */}
+      <div className="vd-section-title" style={{ marginBottom: 12 }}>Cover Photo</div>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.6 }}>
+        Shown on your restaurant card and storefront. A real photo performs much better than the emoji icon.
+      </p>
+      {form.coverImageUrl ? (
+        <div style={{ position: "relative", marginBottom: 20 }}>
+          <img
+            src={form.coverImageUrl}
+            alt="Cover"
+            style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 14, border: "1px solid var(--border)" }}
+          />
+          <button
+            type="button"
+            onClick={() => coverInputRef.current?.click()}
+            disabled={uploadingCover}
+            style={{
+              position: "absolute", bottom: 10, right: 10,
+              background: "rgba(15,15,15,0.75)", border: "none", borderRadius: 10,
+              padding: "7px 12px", color: "white", fontSize: 12, fontWeight: 600,
+              cursor: uploadingCover ? "not-allowed" : "pointer", fontFamily: "DM Sans, sans-serif",
+            }}
+          >
+            {uploadingCover ? "Uploading…" : "Change photo"}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => coverInputRef.current?.click()}
+          disabled={uploadingCover}
+          style={{
+            width: "100%", height: 120, borderRadius: 14, border: "1.5px dashed var(--border)",
+            background: "var(--bg)", color: "var(--muted)", fontSize: 13, fontWeight: 600,
+            cursor: uploadingCover ? "not-allowed" : "pointer", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 20,
+            fontFamily: "DM Sans, sans-serif",
+          }}
+        >
+          {uploadingCover ? "🔄 Uploading…" : <>📷 Tap to upload a cover photo<span style={{ fontSize: 11, fontWeight: 400 }}>JPG or PNG, up to 5MB</span></>}
+        </button>
+      )}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverUpload}
+        style={{ display: "none" }}
+      />
+
       <div className="vd-section-title" style={{ marginBottom: 12 }}>Restaurant Info</div>
 
       <div className="form-group">
@@ -365,7 +471,7 @@ export default function VProfileTab({ showToast }) {
           className="form-input"
           value={form.address}
           onChange={e => set("address", e.target.value)}
-          placeholder="e.g. 12 Kenyatta Ave, Nairobi"
+          placeholder="e.g. Sokoine Road, Arusha"
         />
       </div>
 

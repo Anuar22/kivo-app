@@ -23,7 +23,9 @@ function MenuItem({ item, vendor, addItem, getQty, removeItem }) {
   const qty = getQty(item.id);
   return (
     <div className="menu-item">
-      <div className="menu-item-emoji">{item.image}</div>
+      <div className="menu-item-emoji">
+        {item.image_url ? <img src={item.image_url} alt={item.name} className="menu-item-photo" /> : item.image}
+      </div>
       <div className="menu-item-info">
         <div className="menu-item-top">
           <h4>{item.name}</h4>
@@ -101,7 +103,7 @@ function ReviewForm({ orderId, onDone }) {
       <button
         onClick={submit}
         disabled={saving}
-        style={{ marginTop: 10, background: "#ff6b35", border: "none", borderRadius: 10, padding: "10px 20px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
+        style={{ marginTop: 10, background: "#e53935", border: "none", borderRadius: 10, padding: "10px 20px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
       >
         {saving ? "Submitting…" : "Submit Review"}
       </button>
@@ -143,7 +145,7 @@ export default function VendorPage({ vendor, deliveredOrderId }) {
   if (!vendor) return null;
 
   const popular      = menu.filter(i => i.popular);
-  const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#ff6b35";
+  const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#e53935";
   const deliveryFee  = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
   const deliveryTime = vendor.delivery_time ?? vendor.deliveryTime ?? "20–35 min";
   const reviewCount  = vendor.review_count ?? vendor.reviews ?? 0;

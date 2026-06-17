@@ -1,10 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { vendorsApi } from "../api/index.js";
 
 function VMenuItemRow({ item, onToggle, onEdit }) {
   return (
     <div className="vm-item-row" style={{ opacity: item.available ? 1 : 0.55 }}>
-      <div className="mi-emoji">{item.image}</div>
+      <div className="mi-photo">
+        {item.image_url ? (
+          <img src={item.image_url} alt={item.name} className="mi-photo-img" />
+        ) : (
+          <span className="mi-emoji">{item.image}</span>
+        )}
+      </div>
       <div className="mi-info">
         <div className="mi-name">{item.name}</div>
         <div className="mi-desc">{item.description}</div>
@@ -18,15 +24,17 @@ function VMenuItemRow({ item, onToggle, onEdit }) {
   );
 }
 
-const EMPTY_FORM = { name: "", price: "", image: "🍽️", description: "", available: true, popular: false };
+const EMPTY_FORM = { name: "", price: "", image: "🍽️", image_url: "", description: "", available: true, popular: false };
 
 export default function VMenuTab({ showToast }) {
   const [menu, setMenu]             = useState([]);
   const [loading, setLoading]       = useState(true);
   const [saving, setSaving]         = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [editingId, setEditingId]   = useState(null);
   const [isAdding, setIsAdding]     = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     vendorsApi.myMenu()
@@ -34,6 +42,27 @@ export default function VMenuTab({ showToast }) {
       .catch(e => showToast("⚠️ " + e.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const handlePhotoPick = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("⚠️ Image must be under 5MB");
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const { url } = await vendorsApi.uploadMenuPhoto(file);
+      setForm(f => ({ ...f, image_url: url }));
+      showToast("📸 Photo uploaded!");
+    } catch (e) {
+      showToast("⚠️ " + e.message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = () => setForm(f => ({ ...f, image_url: "" }));
 
   const toggleAvail = async (item) => {
     try {
@@ -46,7 +75,7 @@ export default function VMenuTab({ showToast }) {
   };
 
   const openEdit = (item) => {
-    setForm({ ...item, price: String(item.price) });
+    setForm({ ...item, price: String(item.price), image_url: item.image_url || "" });
     setEditingId(item.id);
     setIsAdding(false);
   };
@@ -63,7 +92,15 @@ export default function VMenuTab({ showToast }) {
     if (!form.name || !form.price) return;
     setSaving(true);
     try {
-      const payload = { ...form, price: parseFloat(form.price) };
+      const payload = {
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price),
+        image: form.image,
+        imageUrl: form.image_url || null,
+        available: form.available,
+        popular: form.popular,
+      };
       if (isAdding) {
         const { item } = await vendorsApi.addItem(payload);
         setMenu(prev => [...prev, item]);
@@ -142,7 +179,57 @@ export default function VMenuTab({ showToast }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Emoji Icon</label>
+              <label className="form-label">Photo</label>
+              {form.image_url ? (
+                <div style={{ position: "relative", marginBottom: 4 }}>
+                  <img
+                    src={form.image_url}
+                    alt="Menu item"
+                    style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 12, border: "1px solid var(--border)" }}
+                  />
+                  <button
+                    onClick={removePhoto}
+                    type="button"
+                    style={{
+                      position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%",
+                      background: "rgba(15,15,15,0.65)", border: "none", color: "white", fontSize: 14,
+                      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >✕</button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  style={{
+                    width: "100%", height: 100, borderRadius: 12, border: "1.5px dashed var(--border)",
+                    background: "var(--bg)", color: "var(--muted)", fontSize: 13, fontWeight: 600,
+                    cursor: uploadingPhoto ? "not-allowed" : "pointer", display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "DM Sans, sans-serif",
+                  }}
+                >
+                  {uploadingPhoto ? (
+                    <>🔄 Uploading…</>
+                  ) : (
+                    <>📷 Tap to add a photo<span style={{ fontSize: 11, fontWeight: 400 }}>JPG or PNG, up to 5MB</span></>
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoPick}
+                style={{ display: "none" }}
+              />
+              <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+                No photo yet? The emoji below is used as a placeholder instead.
+              </p>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Emoji Icon (used if no photo)</label>
               <input className="form-input" value={form.image} onChange={e => setForm({...form, image: e.target.value})} style={{ fontSize: 22, textAlign: "center" }} />
             </div>
             <div className="form-group">
