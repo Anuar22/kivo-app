@@ -79,7 +79,9 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ error: "Role must be customer or vendor." });
   }
 
+  let createdUser = null;
   const client = await pool.connect();
+
   try {
     await client.query("BEGIN");
 
@@ -111,21 +113,32 @@ router.post("/register", async (req, res) => {
     }
 
     await client.query("COMMIT");
-
-    await issueOtp(email, "verify_email");
-
-    res.status(201).json({
-      pendingVerification: true,
-      email: user.email,
-      message: "We sent a 6-digit code to your email. Enter it to finish creating your account.",
-    });
+    createdUser = user;
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Register error:", err.message);
-    res.status(500).json({ error: "Registration failed. Please try again." });
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Register error (account creation):", err.message);
+    return res.status(500).json({ error: "Registration failed. Please try again." });
   } finally {
     client.release();
   }
+
+  // Account creation succeeded and the transaction is closed. Sending the
+  // OTP email is a separate concern from here on — if it fails, the account
+  // still exists and the user can use "resend code" to try again, instead
+  // of the whole registration silently failing.
+  try {
+    const otpResult = await issueOtp(email, "verify_email");
+    console.log(`[register] OTP issue result for ${email}:`, otpResult);
+  } catch (err) {
+    console.error("Register error (sending OTP):", err.message);
+    // Don't fail the request — the account exists, they can hit resend-code.
+  }
+
+  res.status(201).json({
+    pendingVerification: true,
+    email: createdUser.email,
+    message: "We sent a 6-digit code to your email. Enter it to finish creating your account.",
+  });
 });
 
 // POST /api/auth/verify-email — confirms the code and logs the user in
@@ -154,18 +167,24 @@ router.post("/resend-code", async (req, res) => {
     return res.status(400).json({ error: "Invalid purpose." });
   }
 
-  const { rows } = await pool.query("SELECT id, email_verified FROM users WHERE email=$1", [email]);
-  if (!rows[0]) return res.status(404).json({ error: "No account found with that email." });
-  if (purpose === "verify_email" && rows[0].email_verified) {
-    return res.status(400).json({ error: "This email is already verified." });
-  }
+  try {
+    const { rows } = await pool.query("SELECT id, email_verified FROM users WHERE email=$1", [email]);
+    if (!rows[0]) return res.status(404).json({ error: "No account found with that email." });
+    if (purpose === "verify_email" && rows[0].email_verified) {
+      return res.status(400).json({ error: "This email is already verified." });
+    }
 
-  const result = await issueOtp(email, purpose);
-  if (result.rateLimited) {
-    return res.status(429).json({ error: "Too many code requests. Please wait a while before trying again." });
-  }
+    const result = await issueOtp(email, purpose);
+    console.log(`[resend-code] OTP issue result for ${email}:`, result);
+    if (result.rateLimited) {
+      return res.status(429).json({ error: "Too many code requests. Please wait a while before trying again." });
+    }
 
-  res.json({ ok: true, message: "A new code has been sent to your email." });
+    res.json({ ok: true, message: "A new code has been sent to your email." });
+  } catch (err) {
+    console.error("Resend-code error:", err.message);
+    res.status(500).json({ error: "Could not send a new code. Please try again." });
+  }
 });
 
 // POST /api/auth/login
@@ -180,6 +199,10 @@ router.post("/login", async (req, res) => {
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ error: "Invalid email or password." });
+  }
+
+  if (user.is_banned) {
+    return res.status(403).json({ error: "Your account has been suspended. Contact support for help." });
   }
 
   if (!user.email_verified) {

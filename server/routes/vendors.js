@@ -178,7 +178,7 @@ router.get("/", async (req, res) => {
       ` : "NULL AS distance_km"}
     FROM vendors v
     JOIN users u ON u.id = v.user_id
-    WHERE v.is_open = TRUE
+    WHERE v.is_open = TRUE AND v.is_approved = TRUE
   `;
   const params = hasCoords ? [lat, lng] : [];
   let idx = params.length + 1;

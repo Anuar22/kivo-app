@@ -7,6 +7,7 @@ const authRoutes    = require("./routes/auth");
 const vendorRoutes  = require("./routes/vendors");
 const orderRoutes   = require("./routes/orders");
 const paymentRoutes = require("./routes/payments");
+const adminRoutes   = require("./routes/admin");
 const { router: sseRouter } = require("./routes/sse");
 
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/auth",    authRoutes);
 app.use("/api/vendors", vendorRoutes);
 app.use("/api/orders",  orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/admin",   adminRoutes);
 app.use("/api/sse",     sseRouter);
 
 app.get("/health", (_, res) => res.json({ ok: true, ts: new Date() }));

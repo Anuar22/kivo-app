@@ -19,6 +19,7 @@ async function migrate() {
       role        TEXT NOT NULL DEFAULT 'customer',   -- 'customer' | 'vendor'
       business_name TEXT,
       email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+      is_banned   BOOLEAN NOT NULL DEFAULT FALSE,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
 
@@ -33,6 +34,14 @@ async function migrate() {
     );
 
     CREATE INDEX IF NOT EXISTS otp_codes_email_idx ON otp_codes(email);
+
+    CREATE TABLE IF NOT EXISTS admin_invites (
+      id          SERIAL PRIMARY KEY,
+      token       TEXT UNIQUE NOT NULL,
+      used_at     TIMESTAMPTZ,
+      used_by     INT REFERENCES users(id),
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
 
     CREATE TABLE IF NOT EXISTS vendors (
       id            SERIAL PRIMARY KEY,
@@ -53,6 +62,7 @@ async function migrate() {
       longitude     NUMERIC(10,7),
       address       TEXT,
       cover_image_url TEXT,
+      is_approved   BOOLEAN NOT NULL DEFAULT FALSE,
       created_at    TIMESTAMPTZ DEFAULT NOW()
     );
 
@@ -123,12 +133,18 @@ async function migrate() {
   const safeAlters = [
     "alter table users   add column if not exists address   text",
     "alter table users   add column if not exists email_verified boolean not null default false",
+    "alter table users   add column if not exists is_banned boolean not null default false",
     "alter table vendors add column if not exists latitude  numeric(10,7)",
     "alter table vendors add column if not exists longitude numeric(10,7)",
     "alter table vendors add column if not exists address   text",
     "alter table vendors add column if not exists cover_image_url text",
+    "alter table vendors add column if not exists is_approved boolean not null default false",
     "alter table menu_items add column if not exists image_url text",
     "alter table reviews add column if not exists id serial",  // no-op if exists
+    // Backfill: vendors that existed before this column was added shouldn't
+    // suddenly vanish from the customer-facing list just because the column
+    // defaults to false for everyone.
+    "update vendors set is_approved = true where is_approved = false and created_at < now() - interval '1 minute'",
   ];
   for (const sql of safeAlters) {
     await pool.query(sql).catch(() => {});
