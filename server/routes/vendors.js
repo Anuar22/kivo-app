@@ -69,7 +69,17 @@ router.get("/me/menu", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
   const { rows } = await pool.query(
-    "SELECT * FROM menu_items WHERE vendor_id=$1 ORDER BY available DESC, popular DESC, id",
+    `SELECT m.*, COALESCE(oc.order_count, 0)::int AS order_count
+     FROM menu_items m
+     LEFT JOIN (
+       SELECT oi.menu_item_id, SUM(oi.qty) AS order_count
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+       WHERE o.created_at > now() - interval '30 days'
+       GROUP BY oi.menu_item_id
+     ) oc ON oc.menu_item_id = m.id
+     WHERE m.vendor_id=$1
+     ORDER BY m.available DESC, m.popular DESC, order_count DESC, m.id`,
     [vRows[0].id]
   );
   res.json({ menu: rows });
@@ -117,12 +127,12 @@ router.post("/me/cover-photo", auth, requireRole("vendor"), upload.single("photo
 router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
-  const { name, description, price, image, imageUrl, popular, available } = req.body;
+  const { name, description, price, image, imageUrl, popular, available, prepTimeMinutes } = req.body;
   if (!name || !price) return res.status(400).json({ error: "Name and price required." });
   const { rows } = await pool.query(
-    `INSERT INTO menu_items (vendor_id, name, description, price, image, image_url, popular, available)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [vRows[0].id, name, description, price, image || "🍽️", imageUrl || null, !!popular, available !== false]
+    `INSERT INTO menu_items (vendor_id, name, description, price, image, image_url, popular, available, prep_time_minutes)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [vRows[0].id, name, description, price, image || "🍽️", imageUrl || null, !!popular, available !== false, prepTimeMinutes || null]
   );
   res.status(201).json({ item: rows[0] });
 });
@@ -131,7 +141,7 @@ router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
 router.patch("/me/menu/:itemId", auth, requireRole("vendor"), async (req, res) => {
   const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
-  const { name, description, price, image, imageUrl, popular, available } = req.body;
+  const { name, description, price, image, imageUrl, popular, available, prepTimeMinutes } = req.body;
   const { rows } = await pool.query(
     `UPDATE menu_items SET
        name        = COALESCE($1, name),
@@ -140,9 +150,10 @@ router.patch("/me/menu/:itemId", auth, requireRole("vendor"), async (req, res) =
        image       = COALESCE($4, image),
        image_url   = COALESCE($5, image_url),
        popular     = COALESCE($6, popular),
-       available   = COALESCE($7, available)
-     WHERE id=$8 AND vendor_id=$9 RETURNING *`,
-    [name, description, price, image, imageUrl, popular, available, req.params.itemId, vRows[0].id]
+       available   = COALESCE($7, available),
+       prep_time_minutes = COALESCE($8, prep_time_minutes)
+     WHERE id=$9 AND vendor_id=$10 RETURNING *`,
+    [name, description, price, image, imageUrl, popular, available, prepTimeMinutes, req.params.itemId, vRows[0].id]
   );
   if (!rows[0]) return res.status(404).json({ error: "Item not found." });
   res.json({ item: rows[0] });
@@ -236,7 +247,17 @@ router.get("/:id", async (req, res) => {
   );
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
   const { rows: menu } = await pool.query(
-    "SELECT * FROM menu_items WHERE vendor_id=$1 AND available=TRUE ORDER BY popular DESC, id",
+    `SELECT m.*, COALESCE(oc.order_count, 0)::int AS order_count
+     FROM menu_items m
+     LEFT JOIN (
+       SELECT oi.menu_item_id, SUM(oi.qty) AS order_count
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+       WHERE o.created_at > now() - interval '30 days'
+       GROUP BY oi.menu_item_id
+     ) oc ON oc.menu_item_id = m.id
+     WHERE m.vendor_id=$1 AND m.available=TRUE
+     ORDER BY m.popular DESC, order_count DESC, m.id`,
     [req.params.id]
   );
   res.json({ vendor: vRows[0], menu });

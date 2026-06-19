@@ -75,6 +75,7 @@ async function migrate() {
       image       TEXT DEFAULT '🍽️',
       image_url   TEXT,
       popular     BOOLEAN DEFAULT FALSE,
+      prep_time_minutes INT,
       available   BOOLEAN DEFAULT TRUE,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     );
@@ -140,6 +141,7 @@ async function migrate() {
     "alter table vendors add column if not exists cover_image_url text",
     "alter table vendors add column if not exists is_approved boolean not null default false",
     "alter table menu_items add column if not exists image_url text",
+    "alter table menu_items add column if not exists prep_time_minutes int",
     "alter table reviews add column if not exists id serial",  // no-op if exists
     // Backfill: vendors that existed before this column was added shouldn't
     // suddenly vanish from the customer-facing list just because the column

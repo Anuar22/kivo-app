@@ -154,6 +154,35 @@ router.patch("/vendors/:id/approve", auth, requireRole("admin"), async (req, res
   }
 });
 
+// DELETE /api/admin/users/:id — permanently delete a user account
+router.delete("/users/:id", auth, requireRole("admin"), async (req, res) => {
+  try {
+    if (String(req.params.id) === String(req.user.id)) {
+      return res.status(400).json({ error: "You can't delete your own admin account." });
+    }
+
+    const { rows: target } = await pool.query("SELECT id, role FROM users WHERE id=$1", [req.params.id]);
+    if (!target[0]) return res.status(404).json({ error: "User not found." });
+    if (target[0].role === "admin") {
+      return res.status(403).json({ error: "Admin accounts can't be deleted from here." });
+    }
+
+    const { rowCount } = await pool.query("DELETE FROM users WHERE id=$1", [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: "User not found." });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === "23503") {
+      // Foreign key violation — user has order history (orders.customer_id /
+      // vendors.id have no ON DELETE CASCADE), so a hard delete would orphan data.
+      return res.status(409).json({
+        error: "This account has order history and can't be permanently deleted. Ban it instead to block access.",
+      });
+    }
+    console.error("Admin delete user error:", err.message);
+    res.status(500).json({ error: "Could not delete user." });
+  }
+});
+
 // GET /api/admin/stats — quick platform overview
 router.get("/stats", auth, requireRole("admin"), async (req, res) => {
   try {
