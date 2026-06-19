@@ -154,32 +154,55 @@ router.patch("/vendors/:id/approve", auth, requireRole("admin"), async (req, res
   }
 });
 
-// DELETE /api/admin/users/:id — permanently delete a user account
+// DELETE /api/admin/users/:id — permanently delete a user account, including
+// any order history tied to it. This is a deliberate hard delete for admin
+// control before launch — it does NOT preserve orders for bookkeeping.
 router.delete("/users/:id", auth, requireRole("admin"), async (req, res) => {
+  const client = await pool.connect();
   try {
     if (String(req.params.id) === String(req.user.id)) {
+      client.release();
       return res.status(400).json({ error: "You can't delete your own admin account." });
     }
 
-    const { rows: target } = await pool.query("SELECT id, role FROM users WHERE id=$1", [req.params.id]);
-    if (!target[0]) return res.status(404).json({ error: "User not found." });
+    await client.query("BEGIN");
+
+    const { rows: target } = await client.query(
+      "SELECT id, role FROM users WHERE id=$1 FOR UPDATE",
+      [req.params.id]
+    );
+    if (!target[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "User not found." });
+    }
     if (target[0].role === "admin") {
+      await client.query("ROLLBACK");
       return res.status(403).json({ error: "Admin accounts can't be deleted from here." });
     }
 
-    const { rowCount } = await pool.query("DELETE FROM users WHERE id=$1", [req.params.id]);
-    if (!rowCount) return res.status(404).json({ error: "User not found." });
+    if (target[0].role === "vendor") {
+      // orders.vendor_id has no cascade — clear out this vendor's orders
+      // (and their order_items, which DO cascade off orders) before the
+      // user delete cascades vendor → menu_items → reviews.
+      const { rows: vRows } = await client.query("SELECT id FROM vendors WHERE user_id=$1", [req.params.id]);
+      if (vRows[0]) {
+        await client.query("DELETE FROM orders WHERE vendor_id=$1", [vRows[0].id]);
+      }
+    } else {
+      // orders.customer_id has no cascade — clear out this customer's
+      // orders the same way before deleting the user.
+      await client.query("DELETE FROM orders WHERE customer_id=$1", [req.params.id]);
+    }
+
+    await client.query("DELETE FROM users WHERE id=$1", [req.params.id]);
+    await client.query("COMMIT");
     res.json({ ok: true });
   } catch (err) {
-    if (err.code === "23503") {
-      // Foreign key violation — user has order history (orders.customer_id /
-      // vendors.id have no ON DELETE CASCADE), so a hard delete would orphan data.
-      return res.status(409).json({
-        error: "This account has order history and can't be permanently deleted. Ban it instead to block access.",
-      });
-    }
+    await client.query("ROLLBACK").catch(() => {});
     console.error("Admin delete user error:", err.message);
     res.status(500).json({ error: "Could not delete user." });
+  } finally {
+    client.release();
   }
 });
 

@@ -15,6 +15,14 @@ function VMenuItemRow({ item, onToggle, onEdit }) {
         <div className="mi-name">{item.name}</div>
         <div className="mi-desc">{item.description}</div>
         <div className="mi-price">${Number(item.price).toFixed(2)}</div>
+        <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+          {item.prep_time_minutes ? (
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)" }}>⏱ {item.prep_time_minutes} min</span>
+          ) : null}
+          {item.order_count > 0 ? (
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--orange)" }}>🔥 {item.order_count} ordered (30d)</span>
+          ) : null}
+        </div>
       </div>
       <div className="mi-right">
         <button className={`toggle ${item.available ? "on" : ""}`} onClick={() => onToggle(item)} />
@@ -24,7 +32,7 @@ function VMenuItemRow({ item, onToggle, onEdit }) {
   );
 }
 
-const EMPTY_FORM = { name: "", price: "", image: "🍽️", image_url: "", description: "", available: true, popular: false };
+const EMPTY_FORM = { name: "", price: "", image: "🍽️", image_url: "", description: "", available: true, popular: false, prep_time_minutes: "" };
 
 export default function VMenuTab({ showToast }) {
   const [menu, setMenu]             = useState([]);
@@ -75,7 +83,7 @@ export default function VMenuTab({ showToast }) {
   };
 
   const openEdit = (item) => {
-    setForm({ ...item, price: String(item.price), image_url: item.image_url || "" });
+    setForm({ ...item, price: String(item.price), image_url: item.image_url || "", prep_time_minutes: item.prep_time_minutes != null ? String(item.prep_time_minutes) : "" });
     setEditingId(item.id);
     setIsAdding(false);
   };
@@ -100,6 +108,7 @@ export default function VMenuTab({ showToast }) {
         imageUrl: form.image_url || null,
         available: form.available,
         popular: form.popular,
+        prepTimeMinutes: form.prep_time_minutes ? parseInt(form.prep_time_minutes, 10) : null,
       };
       if (isAdding) {
         const { item } = await vendorsApi.addItem(payload);
@@ -246,9 +255,21 @@ export default function VMenuTab({ showToast }) {
                 <input className="form-input" type="number" step="0.50" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Prep Time (min)</label>
+                <input className="form-input" type="number" min="0" step="1" value={form.prep_time_minutes} onChange={e => setForm({...form, prep_time_minutes: e.target.value})} placeholder="e.g. 15" />
+              </div>
+            </div>
+            <div className="form-row">
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Available?</label>
                 <div style={{ paddingTop: 8 }}>
                   <button className={`toggle ${form.available ? "on" : ""}`} onClick={() => setForm({...form, available: !form.available})} />
+                </div>
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Mark as Popular?</label>
+                <div style={{ paddingTop: 8 }}>
+                  <button className={`toggle ${form.popular ? "on" : ""}`} onClick={() => setForm({...form, popular: !form.popular})} />
                 </div>
               </div>
             </div>

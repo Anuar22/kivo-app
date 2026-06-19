@@ -11,6 +11,7 @@ import Cart from "./pages/Cart.jsx";
 import Orders from "./pages/Orders.jsx";
 import Profile from "./pages/Profile.jsx";
 import VendorDashboard from "./vendor/VendorDashboard.jsx";
+import AdminDashboard from "./admin/AdminDashboard.jsx";
 
 function KivoShell() {
   const { user, initializing } = useAccount();
@@ -65,6 +66,10 @@ function KivoShell() {
             </div>
             <BottomNav screen={screen} navigate={navigate} />
           </>
+        ) : role === "admin" ? (
+          <div style={{ minHeight: "100vh" }}>
+            <AdminDashboard showToast={showToast} />
+          </div>
         ) : (
           <div style={{ minHeight: "100vh" }}>
             <VendorDashboard showToast={showToast} />

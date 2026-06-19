@@ -92,6 +92,19 @@ export const paymentsApi = {
   createStripeIntent: (amount) => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
 };
 
+// ─── ADMIN ───────────────────────────────────────────────────────────────────
+export const adminApi = {
+  register:      (body)            => apiRequest("/api/admin/register", { method: "POST", body }),
+  stats:          ()               => apiRequest("/api/admin/stats"),
+  listUsers:      (params = {})    => {
+    const qs = new URLSearchParams(params).toString();
+    return apiRequest(`/api/admin/users${qs ? "?" + qs : ""}`);
+  },
+  banUser:        (id, banned)     => apiRequest(`/api/admin/users/${id}/ban`, { method: "PATCH", body: { banned } }),
+  deleteUser:     (id)             => apiRequest(`/api/admin/users/${id}`, { method: "DELETE" }),
+  listVendors:    (status)         => apiRequest(`/api/admin/vendors${status ? "?status=" + status : ""}`),
+  approveVendor:  (id, approved)   => apiRequest(`/api/admin/vendors/${id}/approve`, { method: "PATCH", body: { approved } }),
+};
 // ─── REVIEWS ─────────────────────────────────────────────────────────────────
 export const reviewsApi = {
   submit:       (orderId, body) => apiRequest(`/api/orders/${orderId}/review`, { method: "POST", body }),

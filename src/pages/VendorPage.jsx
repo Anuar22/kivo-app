@@ -30,6 +30,7 @@ function MenuItem({ item, vendor, addItem, getQty, removeItem }) {
         <div className="menu-item-top">
           <h4>{item.name}</h4>
           {item.popular && <span className="popular-badge">Popular</span>}
+          {item.prep_time_minutes ? <span className="popular-badge" style={{ background: "var(--bg)", color: "var(--muted)" }}>⏱ {item.prep_time_minutes} min</span> : null}
         </div>
         <p>{item.description}</p>
         <div className="menu-item-bottom">
@@ -144,7 +145,7 @@ export default function VendorPage({ vendor, deliveredOrderId }) {
 
   if (!vendor) return null;
 
-  const popular      = menu.filter(i => i.popular);
+  const popular      = menu.filter(i => i.popular || Number(i.order_count) >= 5);
   const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#e53935";
   const deliveryFee  = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
   const deliveryTime = vendor.delivery_time ?? vendor.deliveryTime ?? "20–35 min";
