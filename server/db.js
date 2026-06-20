@@ -1,6 +1,10 @@
 const { Pool } = require("pg");
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isLocal = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: isLocal && process.env.PGSSL !== "true" ? false : { rejectUnauthorized: false },
+});
 
 pool.on("error", (err) => {
   console.error("Unexpected DB error:", err.message);

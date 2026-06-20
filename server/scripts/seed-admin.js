@@ -16,8 +16,8 @@ const { pool } = require("../db");
 
 // ── Edit these three lines with your real details ──────────────────────────
 const ADMIN_NAME     = "Admin";
-const ADMIN_EMAIL    = "admin-kivo@gmail.com";
-const ADMIN_PASSWORD = "Admin@123!";
+const ADMIN_EMAIL    = "admin@gmail.com";
+const ADMIN_PASSWORD = "Admin@2026!";
 // ─────────────────────────────────────────────────────────────────────────
 
 async function main() {
