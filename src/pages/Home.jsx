@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { vendorsApi } from "../api/index.js";
+import { vendorsApi, followsApi } from "../api/index.js";
 import { categories, popularMeals } from "../data/index.js";
 import VendorMap from "../components/VendorMap.jsx";
+import NotificationBell from "../components/NotificationBell.jsx";
 
 function useCustomerLocation() {
   const [coords, setCoords] = useState(() => {
@@ -52,11 +53,12 @@ export default function Home({ navigate }) {
   const [activeCategory, setActiveCategory] = useState(0); // 0 = All
   const [vendors, setVendors]       = useState([]);
   const [loading, setLoading]       = useState(true);
-  const [favourites, setFavourites] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("kivo_favs") || "[]")); }
-    catch { return new Set(); }
-  });
+  const [favourites, setFavourites] = useState(new Set());
   const { coords, denied, request } = useCustomerLocation();
+
+  useEffect(() => {
+    followsApi.ids().then(({ vendorIds }) => setFavourites(new Set(vendorIds))).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -68,11 +70,20 @@ export default function Home({ navigate }) {
   }, [activeCategory, coords]);
 
   const toggleFav = (id) => {
+    const wasFollowing = favourites.has(id);
     setFavourites(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      localStorage.setItem("kivo_favs", JSON.stringify([...next]));
+      wasFollowing ? next.delete(id) : next.add(id);
       return next;
+    });
+    const call = wasFollowing ? followsApi.unfollow(id) : followsApi.follow(id);
+    call.catch(() => {
+      // revert on failure
+      setFavourites(prev => {
+        const next = new Set(prev);
+        wasFollowing ? next.add(id) : next.delete(id);
+        return next;
+      });
     });
   };
 
@@ -106,10 +117,13 @@ export default function Home({ navigate }) {
             {coords ? "📍 Showing nearby restaurants" : "Order your favourite food!"}
           </p>
         </div>
-        <div className="hv2-avatar">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-          </svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <NotificationBell />
+          <div className="hv2-avatar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import VendorPage from "./pages/VendorPage.jsx";
 import Cart from "./pages/Cart.jsx";
 import Orders from "./pages/Orders.jsx";
 import Profile from "./pages/Profile.jsx";
+import Following from "./pages/Following.jsx";
 import VendorDashboard from "./vendor/VendorDashboard.jsx";
 import AdminDashboard from "./admin/AdminDashboard.jsx";
 
@@ -63,6 +64,7 @@ function KivoShell() {
               {screen === "cart"   && <Cart navigate={navigate} />}
               {screen === "orders" && <Orders />}
               {screen === "profile"&& <Profile navigate={navigate} />}
+              {screen === "following" && <Following navigate={navigate} />}
             </div>
             <BottomNav screen={screen} navigate={navigate} />
           </>

@@ -114,6 +114,21 @@ export const reviewsApi = {
   },
 };
 
+// ─── FOLLOWS ─────────────────────────────────────────────────────────────────
+export const followsApi = {
+  list:      ()          => apiRequest("/api/follows"),
+  ids:       ()          => apiRequest("/api/follows/ids"),
+  follow:    (vendorId)  => apiRequest(`/api/follows/${vendorId}`, { method: "POST" }),
+  unfollow:  (vendorId)  => apiRequest(`/api/follows/${vendorId}`, { method: "DELETE" }),
+};
+
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+export const notificationsApi = {
+  list:        ()     => apiRequest("/api/notifications"),
+  markRead:    (id)    => apiRequest(`/api/notifications/${id}/read`, { method: "PATCH" }),
+  markAllRead: ()      => apiRequest("/api/notifications/read-all",   { method: "PATCH" }),
+};
+
 // ─── SSE ─────────────────────────────────────────────────────────────────────
 export function subscribeOrderSSE(orderId, onUpdate) {
   const token = localStorage.getItem("kivo_token");
