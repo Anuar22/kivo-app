@@ -125,7 +125,7 @@ router.post("/me/cover-photo", auth, requireRole("vendor"), upload.single("photo
 
 // POST /api/vendors/me/menu
 router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
-  const { rows: vRows } = await pool.query("SELECT id FROM vendors WHERE user_id=$1", [req.user.id]);
+  const { rows: vRows } = await pool.query("SELECT id, name FROM vendors WHERE user_id=$1", [req.user.id]);
   if (!vRows[0]) return res.status(404).json({ error: "Vendor not found." });
   const { name, description, price, image, imageUrl, popular, available, prepTimeMinutes } = req.body;
   if (!name || !price) return res.status(400).json({ error: "Name and price required." });
@@ -134,6 +134,15 @@ router.post("/me/menu", auth, requireRole("vendor"), async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [vRows[0].id, name, description, price, image || "🍽️", imageUrl || null, !!popular, available !== false, prepTimeMinutes || null]
   );
+
+  // Notify followers — fire-and-forget, never block the vendor's response on this.
+  pool.query(
+    `INSERT INTO notifications (user_id, vendor_id, type, title, body, menu_item_id)
+     SELECT f.customer_id, $1, 'new_item', $2, $3, $4
+     FROM follows f WHERE f.vendor_id = $1`,
+    [vRows[0].id, `${vRows[0].name} added a new item 🍽️`, `${name} is now on the menu — go check it out!`, rows[0].id]
+  ).catch(err => console.error("Follow notification insert failed:", err.message));
+
   res.status(201).json({ item: rows[0] });
 });
 

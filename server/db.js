@@ -116,6 +116,31 @@ async function migrate() {
 
     CREATE INDEX IF NOT EXISTS reviews_vendor_user_id_idx ON reviews(vendor_user_id);
 
+    CREATE TABLE IF NOT EXISTS follows (
+      id          SERIAL PRIMARY KEY,
+      customer_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      vendor_id   INT NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (customer_id, vendor_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS follows_customer_id_idx ON follows(customer_id);
+    CREATE INDEX IF NOT EXISTS follows_vendor_id_idx ON follows(vendor_id);
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id           SERIAL PRIMARY KEY,
+      user_id      INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      vendor_id    INT REFERENCES vendors(id) ON DELETE CASCADE,
+      type         TEXT NOT NULL DEFAULT 'new_item', -- 'new_item' | 'discount'
+      title        TEXT NOT NULL,
+      body         TEXT,
+      menu_item_id INT REFERENCES menu_items(id) ON DELETE CASCADE,
+      read_at      TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications(user_id);
+
     -- Keep updated_at current automatically
     CREATE OR REPLACE FUNCTION set_updated_at()
     RETURNS TRIGGER AS $$

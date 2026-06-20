@@ -8,6 +8,8 @@ const vendorRoutes  = require("./routes/vendors");
 const orderRoutes   = require("./routes/orders");
 const paymentRoutes = require("./routes/payments");
 const adminRoutes   = require("./routes/admin");
+const followRoutes  = require("./routes/follows");
+const notificationRoutes = require("./routes/notifications");
 const { router: sseRouter } = require("./routes/sse");
 
 const app = express();
@@ -38,6 +40,8 @@ app.use("/api/vendors", vendorRoutes);
 app.use("/api/orders",  orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin",   adminRoutes);
+app.use("/api/follows", followRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/sse",     sseRouter);
 
 app.get("/health", (_, res) => res.json({ ok: true, ts: new Date() }));
