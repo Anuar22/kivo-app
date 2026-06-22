@@ -4,7 +4,7 @@ import { useTheme } from "../context/ThemeContext.jsx";
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 
-const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 function Field({ label, value, onChange, type = "text", placeholder, disabled, suffix }) {
   return (
@@ -65,36 +65,16 @@ function ThemeRow({ theme, onToggle }) {
   );
 }
 
-// Loads Google Maps JS (Places) once, only if a key is configured
-function loadGoogleMaps() {
-  return new Promise((resolve, reject) => {
-    if (window.google?.maps) { resolve(window.google.maps); return; }
-    if (!GOOGLE_KEY) { reject(new Error("no_key")); return; }
-    const existing = document.querySelector("script[data-kivo-gmaps]");
-    if (existing) { existing.addEventListener("load", () => resolve(window.google.maps)); return; }
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&libraries=places`;
-    s.async = true;
-    s.dataset.kivoGmaps = "1";
-    s.onload  = () => resolve(window.google.maps);
-    s.onerror = () => reject(new Error("Could not load Google Maps."));
-    document.head.appendChild(s);
-  });
-}
-
-// Reverse-geocodes lat/lng into a human readable address using Google,
-// falling back to plain coordinates if no key is configured.
+// Reverse-geocode lat/lng → readable address using Mapbox,
+// falling back to plain coordinates if no token is configured.
 async function reverseGeocode(lat, lng) {
-  if (!GOOGLE_KEY) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  if (!MAPBOX_TOKEN) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   try {
-    const maps = await loadGoogleMaps();
-    const geocoder = new maps.Geocoder();
-    return await new Promise((resolve) => {
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === "OK" && results[0]) resolve(results[0].formatted_address);
-        else resolve(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-      });
-    });
+    const res  = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`
+    );
+    const data = await res.json();
+    return data.features?.[0]?.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   } catch {
     return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   }
@@ -104,17 +84,19 @@ export default function Profile({ navigate }) {
   const { user, logout, updateUser } = useAccount();
   const { theme, toggleTheme } = useTheme();
   const [form, setForm] = useState({
-    name: user.name || "",
-    email: user.email || "",
-    phone: user.phone || "",
+    name:    user.name    || "",
+    email:   user.email   || "",
+    phone:   user.phone   || "",
     address: user.address || "",
     password: "••••••••",
   });
-  const [saving, setSaving]     = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [error, setError]       = useState("");
-  const [success, setSuccess]   = useState(false);
-  const [stats, setStats]       = useState(null);
+  const [saving,         setSaving]    = useState(false);
+  const [locating,       setLocating]  = useState(false);
+  const [locationStatus, setLocSt]     = useState("");
+  const [hardBlocked,    setHardBlocked] = useState(false);
+  const [error,          setError]     = useState("");
+  const [success,        setSuccess]   = useState(false);
+  const [stats,          setStats]     = useState(null);
 
   useEffect(() => {
     apiRequest("/api/auth/me/stats").then(setStats).catch(() => {});
@@ -122,28 +104,51 @@ export default function Profile({ navigate }) {
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
-  // ── "Use my location" → fills the address field with a real place name ──
-  const useMyLocation = () => {
+  // ── "Use my location" ──────────────────────────────────────────────────────
+  const useMyLocation = async () => {
     if (!navigator.geolocation) {
-      setError("Geolocation isn't supported on this device.");
+      setLocSt("❌ Geolocation isn't supported on this device.");
       return;
     }
+
+    // Check if browser has permanently blocked location before calling
+    // getCurrentPosition — if blocked, it would silently error with no popup.
+    if (navigator.permissions) {
+      try {
+        const result = await navigator.permissions.query({ name: "geolocation" });
+        if (result.state === "denied") {
+          setHardBlocked(true);
+          setLocSt("❌ Location blocked in browser settings. Go to Settings → Site permissions → Location → allow this site, then refresh.");
+          return;
+        }
+      } catch { /* Permissions API not supported — try anyway */ }
+    }
+
     setLocating(true);
+    setHardBlocked(false);
+    setLocSt("📡 Getting your location…");
     setError("");
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
+        setLocSt("🔄 Resolving address…");
         const placeName = await reverseGeocode(latitude, longitude);
         setForm(f => ({ ...f, address: placeName }));
+        setLocSt("✅ Location captured!");
         setLocating(false);
+        setTimeout(() => setLocSt(""), 3000);
       },
       (err) => {
-        const msgs = {
-          1: "Location permission denied. Please allow it in your browser/app settings.",
-          2: "Could not detect your position. Try again or type your address.",
-          3: "Location request timed out.",
-        };
-        setError(msgs[err.code] || "Could not get your location.");
+        if (err.code === 1) {
+          // PERMISSION_DENIED — browser-level block
+          setHardBlocked(true);
+          setLocSt("❌ Location blocked. Go to browser Settings → Site permissions → Location, allow this site, then refresh.");
+        } else if (err.code === 2) {
+          setLocSt("❌ Could not detect your position. Try again or type your address.");
+        } else {
+          setLocSt("❌ Location request timed out. Try again.");
+        }
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -159,7 +164,7 @@ export default function Profile({ navigate }) {
         method: "PATCH",
         body: { name: form.name, phone: form.phone, address: form.address },
       });
-      updateUser(updated);   // <-- persist the change into app-wide state
+      updateUser(updated);
       setSuccess(true);
     } catch (e) {
       setError(e.message);
@@ -205,7 +210,7 @@ export default function Profile({ navigate }) {
           </div>
         )}
 
-        <Field label="Name" value={form.name} onChange={set("name")} placeholder="Your full name" />
+        <Field label="Name"  value={form.name}  onChange={set("name")}  placeholder="Your full name" />
         <Field label="Email" value={form.email} type="email" disabled onChange={() => {}} />
 
         <Field
@@ -217,12 +222,14 @@ export default function Profile({ navigate }) {
             <button
               type="button"
               onClick={useMyLocation}
-              disabled={locating}
-              title="Use my current location"
+              disabled={locating || hardBlocked}
+              title={hardBlocked ? "Location blocked — check browser settings" : "Use my current location"}
               style={{
                 position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", cursor: locating ? "not-allowed" : "pointer",
+                background: "none", border: "none",
+                cursor: (locating || hardBlocked) ? "not-allowed" : "pointer",
                 fontSize: 16, padding: 6, lineHeight: 1,
+                opacity: hardBlocked ? 0.4 : 1,
               }}
             >
               {locating ? "🔄" : "📍"}
@@ -230,16 +237,28 @@ export default function Profile({ navigate }) {
           }
         />
 
-        <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="+254 7xx xxx xxx" />
-        <Field label="Password" value={form.password} type="password" disabled onChange={() => {}} />
+        {/* Location status / error message */}
+        {locationStatus && (
+          <p style={{
+            fontSize: 12, lineHeight: 1.5, marginTop: -8, marginBottom: 12,
+            color: locationStatus.startsWith("✅") ? "#22c55e"
+                 : locationStatus.startsWith("❌") ? "#ef4444"
+                 : "#7a7065",
+          }}>
+            {locationStatus}
+          </p>
+        )}
+
+        <Field label="Phone number" value={form.phone}    onChange={set("phone")}    placeholder="+255 7xx xxx xxx" />
+        <Field label="Password"     value={form.password} type="password" disabled onChange={() => {}} />
 
         {error && <p className="pv2-error">{error}</p>}
 
         <div className="pv2-divider" />
 
         <ThemeRow theme={theme} onToggle={toggleTheme} />
-        <ListRow icon="💳" label="Payment Details" onClick={() => navigate("cart")} />
-        <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
+        <ListRow icon="💳" label="Payment Details"  onClick={() => navigate("cart")}   />
+        <ListRow icon="🧾" label="Order history"    onClick={() => navigate("orders")} />
 
         <div className="pv2-actions">
           <button className="pv2-edit-btn" onClick={save} disabled={saving}>

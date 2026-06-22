@@ -2,73 +2,62 @@ import { useState, useEffect, useRef } from "react";
 import { vendorsApi } from "../api/index.js";
 import { useTheme } from "../context/ThemeContext.jsx";
 
-const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Load Google Maps JS API once (Places + Geocoding)
-function loadGoogleMaps() {
+// Load Mapbox GL JS + CSS once
+function loadMapbox() {
   return new Promise((resolve, reject) => {
-    if (window.google?.maps) { resolve(window.google.maps); return; }
-    if (!GOOGLE_KEY) { reject(new Error("no_key")); return; }
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&libraries=places`;
-    s.async = true;
-    s.onload  = () => resolve(window.google.maps);
-    s.onerror = () => reject(new Error("Could not load Google Maps."));
-    document.head.appendChild(s);
-  });
-}
-
-// Load Leaflet CSS + JS once (free map tiles, no API key)
-function loadLeaflet() {
-  return new Promise((resolve, reject) => {
-    if (window.L) { resolve(window.L); return; }
+    if (window.mapboxgl) { resolve(window.mapboxgl); return; }
     const link = document.createElement("link");
     link.rel  = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.href = "https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css";
     document.head.appendChild(link);
     const s = document.createElement("script");
-    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    s.onload  = () => resolve(window.L);
+    s.src = "https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js";
+    s.onload  = () => resolve(window.mapboxgl);
     s.onerror = () => reject(new Error("Could not load map."));
     document.head.appendChild(s);
   });
 }
 
-// ── Mini map preview showing a draggable pin ─────────────────────────────────
+// ── Mini map preview with draggable Mapbox pin ───────────────────────────────
 function MapPreview({ lat, lng, onMove }) {
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const markerRef    = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current || !lat || !lng) return;
+    if (!containerRef.current || !lat || !lng || !MAPBOX_TOKEN) return;
     let mounted = true;
 
-    loadLeaflet().then(L => {
+    loadMapbox().then(mapboxgl => {
       if (!mounted || !containerRef.current) return;
 
-      // If map already initialised just pan to new position
+      // If map already initialised, just update position
       if (mapRef.current) {
-        mapRef.current.setView([lat, lng], 16);
-        markerRef.current?.setLatLng([lat, lng]);
+        mapRef.current.setCenter([lng, lat]);
+        markerRef.current?.setLngLat([lng, lat]);
         return;
       }
 
-      const map = L.map(containerRef.current, { zoomControl: true, scrollWheelZoom: false }).setView([lat, lng], 16);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap",
-        maxZoom: 19,
-      }).addTo(map);
-
-      const icon = L.divIcon({
-        html: `<div style="font-size:28px;line-height:1;transform:translate(-50%,-100%)">📍</div>`,
-        className: "",
-        iconAnchor: [0, 0],
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [lng, lat],
+        zoom: 16,
+        scrollZoom: false,
       });
-      const marker = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
-      marker.on("dragend", e => {
-        const { lat: newLat, lng: newLng } = e.target.getLatLng();
-        onMove(newLat, newLng);
+
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+
+      const marker = new mapboxgl.Marker({ color: "#e53935", draggable: true })
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      marker.on("dragend", () => {
+        const pos = marker.getLngLat();
+        onMove(pos.lat, pos.lng);
       });
 
       mapRef.current    = map;
@@ -93,50 +82,77 @@ function MapPreview({ lat, lng, onMove }) {
   );
 }
 
-// ── Address search input with Google Places autocomplete ─────────────────────
+// ── Address search using Mapbox Geocoding API ─────────────────────────────────
 function AddressSearch({ onSelect }) {
-  const inputRef    = useRef(null);
-  const acRef       = useRef(null);
-  const [status, setStatus] = useState("idle"); // idle | loading | error
+  const [query,    setQuery]    = useState("");
+  const [results,  setResults]  = useState([]);
+  const [loading,  setLoading]  = useState(false);
+  const debounceRef = useRef(null);
 
-  useEffect(() => {
-    let mounted = true;
-    setStatus("loading");
-    loadGoogleMaps().then(maps => {
-      if (!mounted || !inputRef.current) return;
-      const ac = new maps.places.Autocomplete(inputRef.current, { types: ["establishment", "geocode"] });
-      ac.addListener("place_changed", () => {
-        const place = ac.getPlace();
-        if (!place.geometry) return;
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        onSelect(lat, lng, place.formatted_address || inputRef.current.value);
-      });
-      acRef.current = ac;
-      setStatus("ready");
-    }).catch(e => {
-      if (mounted) setStatus(e.message === "no_key" ? "no_key" : "error");
-    });
-    return () => { mounted = false; };
-  }, []);
+  if (!MAPBOX_TOKEN) return null;
 
-  if (status === "no_key") return null; // Fall through to manual entry
+  const search = (val) => {
+    setQuery(val);
+    clearTimeout(debounceRef.current);
+    if (!val.trim() || val.length < 3) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res  = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(val)}.json?access_token=${MAPBOX_TOKEN}&limit=5&types=address,place,poi`
+        );
+        const data = await res.json();
+        setResults(data.features || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 350);
+  };
+
+  const pick = (feature) => {
+    const [lng, lat] = feature.center;
+    onSelect(lat, lng, feature.place_name);
+    setQuery(feature.place_name);
+    setResults([]);
+  };
 
   return (
-    <div style={{ marginBottom: 10 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: "#7a7065", display: "block", marginBottom: 5 }}>
-        Search your restaurant address
-      </label>
+    <div className="form-group" style={{ position: "relative" }}>
+      <label className="form-label">Search restaurant address</label>
       <input
-        ref={inputRef}
-        type="text"
-        placeholder="Start typing your address…"
         className="form-input"
-        disabled={status === "loading"}
-        style={{ width: "100%", boxSizing: "border-box" }}
+        value={query}
+        onChange={e => search(e.target.value)}
+        placeholder="Start typing your address…"
+        style={{ paddingRight: 32 }}
       />
-      {status === "loading" && (
-        <p style={{ fontSize: 11, color: "#b0a89f", marginTop: 4 }}>Loading address search…</p>
+      {loading && (
+        <span style={{ position: "absolute", right: 10, top: "calc(50% + 10px)", transform: "translateY(-50%)", fontSize: 14 }}>⏳</span>
+      )}
+      {results.length > 0 && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0,
+          background: "white", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+          zIndex: 10, overflow: "hidden", border: "1px solid #e8e4df", marginTop: 2,
+        }}>
+          {results.map(f => (
+            <button
+              key={f.id}
+              onClick={() => pick(f)}
+              style={{
+                width: "100%", textAlign: "left", background: "none", border: "none",
+                padding: "10px 12px", fontSize: 13, color: "#0f0f0f", cursor: "pointer",
+                fontFamily: "DM Sans, sans-serif", borderBottom: "1px solid #f0ede9",
+                display: "flex", alignItems: "flex-start", gap: 6,
+              }}
+            >
+              <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+              <span style={{ lineHeight: 1.4 }}>{f.place_name}</span>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -147,12 +163,13 @@ const CATEGORIES = ["African", "Burgers", "Pizza", "Chicken", "Vegan", "Drinks",
 
 export default function VProfileTab({ showToast }) {
   const { theme, toggleTheme } = useTheme();
-  const [profile, setProfile]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [saving, setSaving]     = useState(false);
-  const [locating, setLocating] = useState(false);
+  const [profile,        setProfile]        = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [saving,         setSaving]         = useState(false);
+  const [locating,       setLocating]       = useState(false);
+  const [hardBlocked,    setHardBlocked]    = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [form, setForm]         = useState(null);
+  const [form,           setForm]           = useState(null);
   const coverInputRef = useRef(null);
 
   useEffect(() => {
@@ -183,10 +200,7 @@ export default function VProfileTab({ showToast }) {
   const handleCoverUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("⚠️ Image must be under 5MB");
-      return;
-    }
+    if (file.size > 5 * 1024 * 1024) { showToast("⚠️ Image must be under 5MB"); return; }
     setUploadingCover(true);
     try {
       const { url, vendor } = await vendorsApi.uploadCoverPhoto(file);
@@ -200,13 +214,27 @@ export default function VProfileTab({ showToast }) {
     }
   };
 
-  // Use device GPS
-  const useMyLocation = () => {
+  // ── GPS location with hard-block detection ────────────────────────────────
+  const useMyLocation = async () => {
     if (!navigator.geolocation) {
       showToast("⚠️ Geolocation not supported on this device");
       return;
     }
+
+    // Check if browser has permanently blocked before calling getCurrentPosition
+    if (navigator.permissions) {
+      try {
+        const result = await navigator.permissions.query({ name: "geolocation" });
+        if (result.state === "denied") {
+          setHardBlocked(true);
+          showToast("⚠️ Location blocked. Go to browser Settings → Site permissions → Location and allow this site.");
+          return;
+        }
+      } catch { /* Permissions API not supported — try anyway */ }
+    }
+
     setLocating(true);
+    setHardBlocked(false);
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude, longitude } = pos.coords;
@@ -215,12 +243,14 @@ export default function VProfileTab({ showToast }) {
         setLocating(false);
       },
       err => {
-        const msgs = {
-          1: "Location permission denied. Please allow it in your browser settings.",
-          2: "Could not detect your position. Try again or enter address manually.",
-          3: "Location request timed out.",
-        };
-        showToast("⚠️ " + (msgs[err.code] || "Location error"));
+        if (err.code === 1) {
+          setHardBlocked(true);
+          showToast("⚠️ Location blocked. Go to browser Settings → Site permissions → Location to allow access.");
+        } else if (err.code === 2) {
+          showToast("⚠️ Could not detect your position. Try again or search your address.");
+        } else {
+          showToast("⚠️ Location request timed out.");
+        }
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -319,7 +349,7 @@ export default function VProfileTab({ showToast }) {
         </button>
       </div>
 
-      {/* ── Basic info ── */}
+      {/* ── Cover photo ── */}
       <div className="vd-section-title" style={{ marginBottom: 12 }}>Cover Photo</div>
       <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, lineHeight: 1.6 }}>
         Shown on your restaurant card and storefront. A real photo performs much better than the emoji icon.
@@ -327,14 +357,11 @@ export default function VProfileTab({ showToast }) {
       {form.coverImageUrl ? (
         <div style={{ position: "relative", marginBottom: 20 }}>
           <img
-            src={form.coverImageUrl}
-            alt="Cover"
+            src={form.coverImageUrl} alt="Cover"
             style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 14, border: "1px solid var(--border)" }}
           />
           <button
-            type="button"
-            onClick={() => coverInputRef.current?.click()}
-            disabled={uploadingCover}
+            type="button" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
             style={{
               position: "absolute", bottom: 10, right: 10,
               background: "rgba(15,15,15,0.75)", border: "none", borderRadius: 10,
@@ -347,9 +374,7 @@ export default function VProfileTab({ showToast }) {
         </div>
       ) : (
         <button
-          type="button"
-          onClick={() => coverInputRef.current?.click()}
-          disabled={uploadingCover}
+          type="button" onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
           style={{
             width: "100%", height: 120, borderRadius: 14, border: "1.5px dashed var(--border)",
             background: "var(--bg)", color: "var(--muted)", fontSize: 13, fontWeight: 600,
@@ -361,14 +386,9 @@ export default function VProfileTab({ showToast }) {
           {uploadingCover ? "🔄 Uploading…" : <>📷 Tap to upload a cover photo<span style={{ fontSize: 11, fontWeight: 400 }}>JPG or PNG, up to 5MB</span></>}
         </button>
       )}
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleCoverUpload}
-        style={{ display: "none" }}
-      />
+      <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} style={{ display: "none" }} />
 
+      {/* ── Restaurant info ── */}
       <div className="vd-section-title" style={{ marginBottom: 12 }}>Restaurant Info</div>
 
       <div className="form-group">
@@ -384,12 +404,10 @@ export default function VProfileTab({ showToast }) {
       <div className="form-group">
         <label className="form-label">Description</label>
         <textarea
-          className="form-input"
-          value={form.description}
+          className="form-input" value={form.description}
           onChange={e => set("description", e.target.value)}
           placeholder="Tell customers what makes you special…"
-          rows={3}
-          style={{ resize: "none", fontFamily: "DM Sans, sans-serif" }}
+          rows={3} style={{ resize: "none", fontFamily: "DM Sans, sans-serif" }}
         />
       </div>
 
@@ -398,15 +416,13 @@ export default function VProfileTab({ showToast }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
           {CATEGORIES.map(c => (
             <button
-              key={c}
-              onClick={() => set("category", c)}
+              key={c} onClick={() => set("category", c)}
               style={{
                 padding: "6px 14px", borderRadius: 100, border: "1.5px solid",
                 borderColor: form.category === c ? "#e53935" : "#e8e4df",
                 background:  form.category === c ? "#fff1ec" : "#fff",
                 color:       form.category === c ? "#e53935" : "#7a7065",
-                fontSize: 13, fontWeight: 500, cursor: "pointer",
-                fontFamily: "DM Sans, sans-serif",
+                fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "DM Sans, sans-serif",
               }}
             >{c}</button>
           ))}
@@ -439,34 +455,34 @@ export default function VProfileTab({ showToast }) {
       {/* GPS button */}
       <button
         onClick={useMyLocation}
-        disabled={locating}
+        disabled={locating || hardBlocked}
         style={{
           width: "100%", padding: "13px", borderRadius: 12,
           border: "1.5px solid #e8e4df",
-          background: locating ? "#f7f5f2" : "#fff",
-          color: locating ? "#b0a89f" : "#0f0f0f",
-          fontWeight: 700, fontSize: 14, cursor: locating ? "not-allowed" : "pointer",
+          background: (locating || hardBlocked) ? "#f7f5f2" : "#fff",
+          color: (locating || hardBlocked) ? "#b0a89f" : "#0f0f0f",
+          fontWeight: 700, fontSize: 14, cursor: (locating || hardBlocked) ? "not-allowed" : "pointer",
           fontFamily: "DM Sans, sans-serif", display: "flex", alignItems: "center",
           justifyContent: "center", gap: 8, marginBottom: 16, transition: "all 0.2s",
         }}
       >
-        {locating
-          ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>🔄</span> Getting your location…</>
-          : <>📍 Use My Current Location</>
+        {hardBlocked
+          ? <>🚫 Location blocked — allow in browser settings</>
+          : locating
+            ? <><span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>🔄</span> Getting your location…</>
+            : <>📍 Use My Current Location</>
         }
       </button>
 
-      {/* Google Places search (only if API key configured) */}
-      {GOOGLE_KEY && (
-        <AddressSearch onSelect={(lat, lng, addr) => {
-          setForm(f => ({ ...f, latitude: lat, longitude: lng, address: addr }));
-          showToast("📍 Address found!");
-        }} />
-      )}
+      {/* Mapbox address search */}
+      <AddressSearch onSelect={(lat, lng, addr) => {
+        setForm(f => ({ ...f, latitude: lat, longitude: lng, address: addr }));
+        showToast("📍 Address found!");
+      }} />
 
       {/* Manual address text fallback */}
       <div className="form-group">
-        <label className="form-label">Address {GOOGLE_KEY ? "(auto-filled above, or type manually)" : "(type your address)"}</label>
+        <label className="form-label">Address (or type manually)</label>
         <input
           className="form-input"
           value={form.address}
@@ -475,7 +491,7 @@ export default function VProfileTab({ showToast }) {
         />
       </div>
 
-      {/* Map preview with draggable pin */}
+      {/* Mapbox map preview with draggable pin */}
       {hasLocation && (
         <MapPreview
           lat={form.latitude}
@@ -484,18 +500,7 @@ export default function VProfileTab({ showToast }) {
         />
       )}
 
-      {!GOOGLE_KEY && (
-        <p style={{ fontSize: 11, color: "#b0a89f", marginTop: 8, lineHeight: 1.5 }}>
-          💡 Add <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>VITE_GOOGLE_MAPS_KEY</code> to your .env to enable address autocomplete.
-        </p>
-      )}
-
-      <button
-        className="btn-save"
-        onClick={save}
-        disabled={saving}
-        style={{ marginTop: 24 }}
-      >
+      <button className="btn-save" onClick={save} disabled={saving} style={{ marginTop: 24 }}>
         {saving ? "Saving…" : "Save Profile"}
       </button>
 
