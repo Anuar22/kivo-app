@@ -3,6 +3,9 @@ import { useCart } from "../context/CartContext.jsx";
 import { ordersApi, paymentsApi } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 
+// ── Mapbox token ────────────────────────────────────────────────────────────
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
 // Load Stripe.js once from CDN — no npm package needed
 function loadStripeJs() {
   return new Promise((resolve, reject) => {
@@ -15,12 +18,299 @@ function loadStripeJs() {
   });
 }
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+// Load Mapbox GL JS + CSS once
+function loadMapbox() {
+  return new Promise((resolve, reject) => {
+    if (window.mapboxgl) { resolve(window.mapboxgl); return; }
+
+    const link = document.createElement("link");
+    link.rel  = "stylesheet";
+    link.href = "https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css";
+    document.head.appendChild(link);
+
+    const s = document.createElement("script");
+    s.src = "https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js";
+    s.onload  = () => resolve(window.mapboxgl);
+    s.onerror = () => reject(new Error("Could not load map"));
+    document.head.appendChild(s);
+  });
+}
+
+// ── Mapbox address picker ───────────────────────────────────────────────────
+// Shows a search box + map with a draggable pin.
+// Calls onConfirm({ address, lat, lng }) when the user confirms.
+function AddressPicker({ initialAddress, onConfirm, onCancel }) {
+  const containerRef = useRef(null);
+  const mapRef       = useRef(null);
+  const markerRef    = useRef(null);
+
+  const [query,    setQuery]    = useState(initialAddress || "");
+  const [results,  setResults]  = useState([]);
+  const [coords,   setCoords]   = useState(null);  // { lat, lng }
+  const [addrLine, setAddrLine] = useState(initialAddress || "");
+  const [searching, setSearching] = useState(false);
+  const [mapReady,  setMapReady]  = useState(false);
+  const debounceRef = useRef(null);
+
+  // Init map
+  useEffect(() => {
+    if (!MAPBOX_TOKEN) return;
+    let mounted = true;
+
+    loadMapbox().then(mapboxgl => {
+      if (!mounted || !containerRef.current || mapRef.current) return;
+
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [36.817, -1.286],   // Default: Nairobi (will be overridden by GPS or search)
+        zoom: 13,
+      });
+
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+
+      // Draggable marker
+      const marker = new mapboxgl.Marker({ color: "#e53935", draggable: true })
+        .setLngLat([36.817, -1.286])
+        .addTo(map);
+
+      marker.on("dragend", async () => {
+        const { lng, lat } = marker.getLngLat();
+        setCoords({ lat, lng });
+        // Reverse geocode to get address string
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`
+          );
+          const data = await res.json();
+          const place = data.features?.[0]?.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setAddrLine(place);
+          setQuery(place);
+        } catch {
+          setAddrLine(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+      });
+
+      // Click on map to move marker
+      map.on("click", async (e) => {
+        const { lng, lat } = e.lngLat;
+        marker.setLngLat([lng, lat]);
+        setCoords({ lat, lng });
+        try {
+          const res = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`
+          );
+          const data = await res.json();
+          const place = data.features?.[0]?.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setAddrLine(place);
+          setQuery(place);
+        } catch {
+          setAddrLine(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+      });
+
+      mapRef.current    = map;
+      markerRef.current = marker;
+
+      // Try to get user's location for a better default center
+      navigator.geolocation?.getCurrentPosition(pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        if (!mounted) return;
+        map.flyTo({ center: [lng, lat], zoom: 15 });
+        marker.setLngLat([lng, lat]);
+        setCoords({ lat, lng });
+        // Reverse geocode current position
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`)
+          .then(r => r.json())
+          .then(data => {
+            const place = data.features?.[0]?.place_name || "";
+            if (place && !initialAddress) { setAddrLine(place); setQuery(place); }
+          })
+          .catch(() => {});
+      }, () => {}, { timeout: 5000 });
+
+      map.on("load", () => { if (mounted) setMapReady(true); });
+    }).catch(() => {});
+
+    return () => { mounted = false; };
+  }, []);
+
+  // Search using Mapbox Geocoding API
+  const search = (val) => {
+    setQuery(val);
+    clearTimeout(debounceRef.current);
+    if (!val.trim() || val.length < 3) { setResults([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(val)}.json?access_token=${MAPBOX_TOKEN}&limit=5&types=address,place,poi`
+        );
+        const data = await res.json();
+        setResults(data.features || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 350);
+  };
+
+  const selectResult = (feature) => {
+    const [lng, lat] = feature.center;
+    const place = feature.place_name;
+    setQuery(place);
+    setAddrLine(place);
+    setResults([]);
+    setCoords({ lat, lng });
+    if (mapRef.current && markerRef.current) {
+      mapRef.current.flyTo({ center: [lng, lat], zoom: 16 });
+      markerRef.current.setLngLat([lng, lat]);
+    }
+  };
+
+  const confirm = () => {
+    if (!coords || !addrLine.trim()) return;
+    onConfirm({ address: addrLine, lat: coords.lat, lng: coords.lng });
+  };
+
+  if (!MAPBOX_TOKEN) {
+    // Fallback: plain text input if no token configured
+    return (
+      <div>
+        <p style={{ fontSize: 12, color: "#b0a89f", marginBottom: 8 }}>
+          💡 Add <code>VITE_MAPBOX_TOKEN</code> to Vercel env vars to enable map-based address picking.
+        </p>
+        <input
+          className="pv2-input"
+          placeholder="Enter your delivery address..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          style={{ marginBottom: 12 }}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn-primary" onClick={() => onConfirm({ address: query, lat: null, lng: null })}
+            style={{ flex: 1, padding: "13px", borderRadius: 12 }}>Use this address</button>
+          <button onClick={onCancel}
+            style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", cursor: "pointer" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Search box */}
+      <div style={{ position: "relative" }}>
+        <input
+          className="pv2-input"
+          placeholder="Search your delivery address…"
+          value={query}
+          onChange={e => search(e.target.value)}
+          style={{ paddingRight: 36 }}
+          autoFocus
+        />
+        {searching && (
+          <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 16 }}>⏳</span>
+        )}
+        {/* Autocomplete dropdown */}
+        {results.length > 0 && (
+          <div style={{
+            position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+            background: "white", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
+            zIndex: 10, overflow: "hidden", border: "1px solid #e8e4df",
+          }}>
+            {results.map(f => (
+              <button
+                key={f.id}
+                onClick={() => selectResult(f)}
+                style={{
+                  width: "100%", textAlign: "left", background: "none", border: "none",
+                  padding: "11px 14px", fontSize: 13, color: "#0f0f0f", cursor: "pointer",
+                  fontFamily: "DM Sans, sans-serif", borderBottom: "1px solid #f0ede9",
+                  display: "flex", alignItems: "flex-start", gap: 8,
+                }}
+              >
+                <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+                <span style={{ lineHeight: 1.4 }}>{f.place_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Map */}
+      <div style={{ position: "relative" }}>
+        <div
+          ref={containerRef}
+          style={{ height: 220, borderRadius: 14, overflow: "hidden", border: "1.5px solid #e8e4df" }}
+        />
+        {!mapReady && (
+          <div style={{
+            position: "absolute", inset: 0, display: "flex", alignItems: "center",
+            justifyContent: "center", background: "#f7f5f2", borderRadius: 14,
+            fontSize: 13, color: "#b0a89f",
+          }}>
+            Loading map…
+          </div>
+        )}
+      </div>
+
+      <p style={{ fontSize: 12, color: "#7a7065", margin: 0 }}>
+        🗺️ Tap the map or drag the pin to fine-tune your exact location
+      </p>
+
+      {/* Confirmed address line */}
+      {addrLine && (
+        <div style={{
+          background: "#f7f5f2", borderRadius: 10, padding: "10px 14px",
+          fontSize: 13, color: "#0f0f0f", display: "flex", gap: 8, alignItems: "flex-start",
+        }}>
+          <span style={{ flexShrink: 0 }}>📍</span>
+          <span style={{ lineHeight: 1.5 }}>{addrLine}</span>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+        <button
+          onClick={confirm}
+          disabled={!coords || !addrLine.trim()}
+          style={{
+            flex: 1, background: (!coords || !addrLine.trim()) ? "#e8e4df" : "#e53935",
+            border: "none", borderRadius: 12, padding: "13px",
+            color: (!coords || !addrLine.trim()) ? "#b0a89f" : "white",
+            fontWeight: 700, fontSize: 14, cursor: (!coords || !addrLine.trim()) ? "not-allowed" : "pointer",
+            fontFamily: "DM Sans, sans-serif", transition: "background 0.2s",
+          }}
+        >
+          Confirm Location
+        </button>
+        <button
+          onClick={onCancel}
+          style={{
+            background: "none", border: "1.5px solid #e8e4df", borderRadius: 12,
+            padding: "13px 16px", fontSize: 13, color: "#7a7065",
+            fontFamily: "DM Sans, sans-serif", cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Stripe card form ────────────────────────────────────────────────────────
+const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
 function StripeCardForm({ amount, onSuccess, onCancel }) {
   const cardRef    = useRef(null);
-  const elemRef    = useRef(null); // Stripe CardElement instance
+  const elemRef    = useRef(null);
   const stripeRef  = useRef(null);
   const [ready, setReady]   = useState(false);
   const [paying, setPaying] = useState(false);
@@ -34,44 +324,32 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
       const elements = stripe.elements();
       const card     = elements.create("card", {
         style: {
-          base: {
-            fontSize: "15px",
-            fontFamily: "'DM Sans', sans-serif",
-            color: "#0f0f0f",
-            "::placeholder": { color: "#b0a89f" },
-          },
+          base: { fontSize: "15px", fontFamily: "'DM Sans', sans-serif", color: "#0f0f0f", "::placeholder": { color: "#b0a89f" } },
           invalid: { color: "#ef4444" },
         },
         hidePostalCode: true,
       });
       card.mount(cardRef.current);
-      card.on("ready", () => { if (mounted) setReady(true); });
+      card.on("ready",  () => { if (mounted) setReady(true); });
       card.on("change", e => { if (mounted) setError(e.error?.message || ""); });
       stripeRef.current = stripe;
       elemRef.current   = card;
     }).catch(e => setError(e.message));
-
-    return () => {
-      mounted = false;
-      elemRef.current?.destroy();
-    };
+    return () => { mounted = false; elemRef.current?.destroy(); };
   }, []);
 
   const pay = async () => {
     if (!stripeRef.current || !elemRef.current) return;
-    setPaying(true);
-    setError("");
+    setPaying(true); setError("");
     try {
       const { clientSecret } = await paymentsApi.createStripeIntent(amount);
       const { error: stripeErr, paymentIntent } = await stripeRef.current.confirmCardPayment(
-        clientSecret,
-        { payment_method: { card: elemRef.current } }
+        clientSecret, { payment_method: { card: elemRef.current } }
       );
       if (stripeErr) { setError(stripeErr.message); setPaying(false); return; }
       if (paymentIntent.status === "succeeded") onSuccess(paymentIntent.id);
     } catch (e) {
-      setError(e.message);
-      setPaying(false);
+      setError(e.message); setPaying(false);
     }
   };
 
@@ -79,49 +357,28 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
     <div style={{ marginTop: 8 }}>
       <div
         ref={cardRef}
-        style={{
-          border: "1.5px solid #e8e4df",
-          borderRadius: 12,
-          padding: "14px 14px",
-          background: "#fafaf9",
-          minHeight: 46,
-          transition: "border-color 0.2s",
-        }}
+        style={{ border: "1.5px solid #e8e4df", borderRadius: 12, padding: "14px", background: "#fafaf9", minHeight: 46 }}
       />
-      {!ready && !error && (
-        <p style={{ fontSize: 12, color: "#b0a89f", marginTop: 6 }}>Loading card form…</p>
-      )}
-      {error && (
-        <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{error}</p>
-      )}
-
+      {!ready && !error && <p style={{ fontSize: 12, color: "#b0a89f", marginTop: 6 }}>Loading card form…</p>}
+      {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{error}</p>}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <button
-          onClick={pay}
-          disabled={paying || !ready}
+          onClick={pay} disabled={paying || !ready}
           style={{
-            flex: 1, background: paying ? "#b0a89f" : "#0f0f0f",
-            border: "none", borderRadius: 12, padding: "13px",
-            color: "white", fontWeight: 700, fontSize: 14,
+            flex: 1, background: paying ? "#b0a89f" : "#0f0f0f", border: "none", borderRadius: 12,
+            padding: "13px", color: "white", fontWeight: 700, fontSize: 14,
             fontFamily: "'DM Sans', sans-serif", cursor: paying ? "not-allowed" : "pointer",
-            transition: "background 0.2s",
           }}
         >
           {paying ? "Processing…" : `Pay $${Number(amount).toFixed(2)}`}
         </button>
         <button
-          onClick={onCancel}
-          disabled={paying}
-          style={{
-            background: "none", border: "1.5px solid #e8e4df", borderRadius: 12,
-            padding: "13px 16px", fontSize: 13, color: "#7a7065",
-            fontFamily: "'DM Sans', sans-serif", cursor: "pointer",
-          }}
+          onClick={onCancel} disabled={paying}
+          style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "'DM Sans', sans-serif", cursor: "pointer" }}
         >
           Cancel
         </button>
       </div>
-
       <p style={{ fontSize: 11, color: "#b0a89f", marginTop: 10, textAlign: "center", lineHeight: 1.5 }}>
         🔒 Powered by Stripe · Your card details never touch our servers
       </p>
@@ -134,11 +391,7 @@ const PAY_METHODS = [
   {
     id: "card", label: "Card",
     detail: "Pay securely with Visa or Mastercard",
-    render: () => (
-      <div className="pm-card-icons">
-        <span className="pm-mc" /><span className="pm-visa">VISA</span>
-      </div>
-    ),
+    render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa">VISA</span></div>,
   },
   { id: "cash",   label: "Cash on Delivery", detail: "Pay when your order arrives", emoji: "💵" },
   { id: "mobile", label: "Mobile Money",     detail: "Coming soon",                 emoji: "📱", disabled: true },
@@ -146,55 +399,49 @@ const PAY_METHODS = [
 
 export default function Cart({ navigate }) {
   const { items, addItem, removeItem, clearCart, total, vendorName, vendorId } = useCart();
-  const [address, setAddress]       = useState("");
-  const [payMethod, setPayMethod]   = useState("cash");
-  const [showCardForm, setShowCardForm] = useState(false);
-  const [placed, setPlaced]         = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
+
+  // Delivery address state — stores text + coordinates
+  const [delivery,       setDelivery]       = useState({ address: "", lat: null, lng: null });
+  const [showPicker,     setShowPicker]      = useState(false);
+  const [payMethod,      setPayMethod]       = useState("cash");
+  const [showCardForm,   setShowCardForm]    = useState(false);
+  const [placed,         setPlaced]          = useState(false);
+  const [loading,        setLoading]         = useState(false);
+  const [error,          setError]           = useState("");
 
   const deliveryFee = items.length > 0 ? 2.00 : 0;
   const taxes       = items.length > 0 ? Math.round(total * 0.05 * 100) / 100 : 0;
   const grandTotal  = total + deliveryFee + taxes;
-
   const stripeAvailable = !!PUBLISHABLE_KEY;
 
-  useEffect(() => {
-    if (payMethod !== "card") setShowCardForm(false);
-  }, [payMethod]);
+  useEffect(() => { if (payMethod !== "card") setShowCardForm(false); }, [payMethod]);
 
   const submitOrder = async (stripePaymentId = null) => {
-    if (!address.trim()) { setError("Please enter a delivery address."); return; }
-    setError("");
-    setLoading(true);
+    if (!delivery.address.trim()) { setError("Please set a delivery address."); return; }
+    setError(""); setLoading(true);
     try {
       await ordersApi.place({
         vendorId,
-        address,
-        paymentMethod: payMethod,
+        address:        delivery.address,
+        deliveryLat:    delivery.lat,
+        deliveryLng:    delivery.lng,
+        paymentMethod:  payMethod,
         stripePaymentId,
         items: items.map(i => ({ menuItemId: i.id, qty: i.qty })),
       });
       setPlaced(true);
     } catch (e) {
-      setError(e.message);
-      setLoading(false);
+      setError(e.message); setLoading(false);
     }
   };
 
   const placeOrder = async () => {
-    if (!address.trim()) { setError("Please enter a delivery address."); return; }
-    if (payMethod === "card" && stripeAvailable) {
-      setShowCardForm(true);
-      return;
-    }
+    if (!delivery.address.trim()) { setError("Please set a delivery address."); return; }
+    if (payMethod === "card" && stripeAvailable) { setShowCardForm(true); return; }
     submitOrder();
   };
 
-  const closeSuccess = () => {
-    clearCart();
-    navigate("orders");
-  };
+  const closeSuccess = () => { clearCart(); navigate("orders"); };
 
   // ── Empty cart ─────────────────────────────────────────────────────────────
   if (items.length === 0 && !placed) return (
@@ -236,15 +483,41 @@ export default function Cart({ navigate }) {
           ))}
         </div>
 
-        {/* ── Address ── */}
+        {/* ── Delivery Address ── */}
         <p className="cv2-section-title">📍 Delivery Address</p>
-        <input
-          className="pv2-input"
-          placeholder="Enter your delivery address..."
-          value={address}
-          onChange={e => setAddress(e.target.value)}
-          style={{ marginBottom: 20 }}
-        />
+
+        {showPicker ? (
+          <div style={{ marginBottom: 20 }}>
+            <AddressPicker
+              initialAddress={delivery.address}
+              onConfirm={({ address, lat, lng }) => {
+                setDelivery({ address, lat, lng });
+                setShowPicker(false);
+              }}
+              onCancel={() => setShowPicker(false)}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPicker(true)}
+            style={{
+              width: "100%", textAlign: "left", background: delivery.address ? "#f7f5f2" : "#fff",
+              border: `1.5px solid ${delivery.address ? "#e8e4df" : "#e53935"}`,
+              borderRadius: 12, padding: "13px 14px", marginBottom: 20,
+              fontFamily: "DM Sans, sans-serif", fontSize: 13,
+              color: delivery.address ? "#0f0f0f" : "#b0a89f",
+              cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8,
+            }}
+          >
+            <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+            <span style={{ lineHeight: 1.5 }}>
+              {delivery.address || "Tap to set your delivery location on the map…"}
+            </span>
+            <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "#e53935", fontWeight: 600 }}>
+              {delivery.address ? "Change" : "Set"}
+            </span>
+          </button>
+        )}
 
         {/* ── Order summary ── */}
         <p className="cv2-section-title">Order summary</p>
@@ -266,9 +539,7 @@ export default function Cart({ navigate }) {
               onClick={() => { if (!pm.disabled) setPayMethod(pm.id); }}
               disabled={pm.disabled}
             >
-              <div className="cv2-pay-icon">
-                {pm.render ? pm.render() : pm.emoji}
-              </div>
+              <div className="cv2-pay-icon">{pm.render ? pm.render() : pm.emoji}</div>
               <div className="cv2-pay-text">
                 <span className="cv2-pay-label">{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
                 <span className="cv2-pay-detail">{pm.detail}</span>
@@ -304,13 +575,13 @@ export default function Cart({ navigate }) {
       </div>
 
       {/* ── Sticky bottom Pay bar ── */}
-      {!showCardForm && (
+      {!showCardForm && !showPicker && (
         <div className="cv2-bottom-bar">
           <div className="cv2-bottom-total">
             <span className="cv2-bottom-total-label">Total amt</span>
             <span className="cv2-bottom-total-amount">${grandTotal.toFixed(2)}</span>
           </div>
-          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading}>
+          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || !delivery.address}>
             {loading ? "Placing…" : "Pay Now"}
           </button>
         </div>
