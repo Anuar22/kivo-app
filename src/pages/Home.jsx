@@ -9,25 +9,51 @@ function useCustomerLocation() {
     try { const s = sessionStorage.getItem("kivo_coords"); return s ? JSON.parse(s) : null; }
     catch { return null; }
   });
-  const [asking, setAsking] = useState(false);
-  const [denied, setDenied] = useState(false);
+  const [asking,       setAsking]       = useState(false);
+  const [denied,       setDenied]       = useState(false);
+  const [hardBlocked,  setHardBlocked]  = useState(false); // browser-level block, can't retry
 
   const request = () => {
     if (!navigator.geolocation || asking) return;
+
+    // Check Permissions API first (supported on most modern mobile browsers).
+    // If the permission is already "denied" at the browser level, we can't
+    // call getCurrentPosition — it would just silently error again. Instead,
+    // tell the user to fix it in Settings.
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: "geolocation" }).then(result => {
+        if (result.state === "denied") {
+          setHardBlocked(true);
+          setDenied(true);
+          return;
+        }
+        doRequest();
+      }).catch(() => doRequest()); // Permissions API not supported — try anyway
+    } else {
+      doRequest();
+    }
+  };
+
+  const doRequest = () => {
     setAsking(true);
     navigator.geolocation.getCurrentPosition(
       pos => {
         const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         sessionStorage.setItem("kivo_coords", JSON.stringify(c));
-        setCoords(c); setAsking(false);
+        setCoords(c); setAsking(false); setDenied(false); setHardBlocked(false);
       },
-      () => { setDenied(true); setAsking(false); },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+      (err) => {
+        // code 1 = PERMISSION_DENIED (user blocked it)
+        // code 2 = POSITION_UNAVAILABLE, code 3 = TIMEOUT — these are retriable
+        if (err.code === 1) setHardBlocked(true);
+        setDenied(true); setAsking(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     );
   };
 
   useEffect(() => { if (!coords && !denied) request(); }, []);
-  return { coords, asking, denied, request };
+  return { coords, asking, denied, hardBlocked, request };
 }
 
 function HeartBtn({ filled, onClick }) {
@@ -54,7 +80,7 @@ export default function Home({ navigate }) {
   const [vendors, setVendors]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [favourites, setFavourites] = useState(new Set());
-  const { coords, denied, request } = useCustomerLocation();
+  const { coords, denied, hardBlocked, asking, request } = useCustomerLocation();
 
   useEffect(() => {
     followsApi.ids().then(({ vendorIds }) => setFavourites(new Set(vendorIds))).catch(() => {});
@@ -154,15 +180,30 @@ export default function Home({ navigate }) {
         </button>
       </div>
 
-      {/* ── Location denied nudge ── */}
-      {denied && !coords && (
+      {/* ── Location nudge ── */}
+      {!coords && denied && (
         <div className="hv2-nudge">
           <span>📍</span>
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 600, fontSize: 13 }}>Enable location for nearby results</p>
-            <p style={{ fontSize: 12, color: "#999", marginTop: 1 }}>We'll show closest restaurants first</p>
+            {hardBlocked ? (
+              <>
+                <p style={{ fontWeight: 600, fontSize: 13 }}>Location blocked</p>
+                <p style={{ fontSize: 12, color: "#999", marginTop: 1, lineHeight: 1.4 }}>
+                  Go to your browser Settings → Site permissions → Location → allow <strong>kivo</strong>, then refresh.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontWeight: 600, fontSize: 13 }}>Enable location for nearby results</p>
+                <p style={{ fontSize: 12, color: "#999", marginTop: 1 }}>We'll show closest restaurants first</p>
+              </>
+            )}
           </div>
-          <button className="hv2-nudge-btn" onClick={request}>Allow</button>
+          {!hardBlocked && (
+            <button className="hv2-nudge-btn" onClick={request} disabled={asking}>
+              {asking ? "…" : "Allow"}
+            </button>
+          )}
         </div>
       )}
 
