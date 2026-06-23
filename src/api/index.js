@@ -89,7 +89,9 @@ export const ordersApi = {
 
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
 export const paymentsApi = {
-  createStripeIntent: (amount) => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
+  createStripeIntent:   (amount)            => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
+  paystackInit:         (body)              => apiRequest("/api/payments/paystack/init",  { method: "POST", body }),
+  paystackVerify:       (reference)         => apiRequest(`/api/payments/paystack/verify?reference=${reference}`),
 };
 
 // ─── ADMIN ───────────────────────────────────────────────────────────────────

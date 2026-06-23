@@ -231,6 +231,23 @@ router.patch("/:id/status", auth, requireRole("vendor"), async (req, res) => {
   );
   const updated = await fullOrder(rows[0].id);
   sse().emitOrderUpdate(updated);
+
+  // ── Notify the customer about their order status change ──────────────────
+  const statusMessages = {
+    Accepted:  { title: "Order accepted! 🎉",        body: `${updated.vendor_name} has accepted your order ${updated.ref}.` },
+    Cooking:   { title: "Your order is being prepared 👨‍🍳", body: `${updated.vendor_name} is cooking your order now.` },
+    Ready:     { title: "Order is ready! 🛵",         body: `Your order from ${updated.vendor_name} is ready for pickup/delivery.` },
+    Delivered: { title: "Order delivered! ✅",         body: `Your order from ${updated.vendor_name} has been delivered. Enjoy!` },
+  };
+  const msg = statusMessages[status];
+  if (msg) {
+    pool.query(
+      `INSERT INTO notifications (user_id, vendor_id, type, title, body)
+       VALUES ($1, $2, 'order_status', $3, $4)`,
+      [oRows[0].customer_id, vRows[0].id, msg.title, msg.body]
+    ).catch(err => console.error("Notification insert error:", err.message));
+  }
+
   res.json({ order: updated });
 });
 
