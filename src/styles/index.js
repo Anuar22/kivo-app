@@ -520,8 +520,8 @@ const CSS = `
   .btn-add-item:hover { background: #ffe4d6; }
 
   /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; max-width: 420px; left: 50%; transform: translateX(-50%); }
-  .modal-sheet { background: var(--card); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; animation: slideUp 0.25s ease; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; justify-content: center; width: 100%; left: 0; transform: none; }
+  .modal-sheet { background: var(--card); border-radius: 20px 20px 0 0; padding: 24px 20px 40px; width: 100%; max-width: 480px; animation: slideUp 0.25s ease; }
   .confirm-sheet { background: var(--card); border-radius: 20px 20px 0 0; padding: 22px 18px 28px; width: 100%; animation: slideUp 0.25s ease; }
   .confirm-sheet h2 { font-family: var(--font-heading); font-size: 19px; font-weight: 800; margin-bottom: 8px; }
   .confirm-sheet p { color: var(--muted); font-size: 14px; line-height: 1.45; margin-bottom: 16px; }
@@ -1065,7 +1065,7 @@ const CSS = `
       height: calc(100svh - 36px);
       border-radius: 28px;
     }
-    .navbar, .bottom-nav, .modal-overlay { max-width: 420px; }
+    .navbar, .bottom-nav { max-width: 420px; }
     .navbar { top: 18px; }
     .bottom-nav { bottom: 18px; border-radius: 0 0 28px 28px; overflow: hidden; }
     .main-content { height: calc(100svh - 36px); min-height: calc(100svh - 36px); }
