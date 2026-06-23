@@ -89,9 +89,9 @@ export const ordersApi = {
 
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
 export const paymentsApi = {
-  createStripeIntent:   (amount)            => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
-  paystackInit:         (body)              => apiRequest("/api/payments/paystack/init",  { method: "POST", body }),
-  paystackVerify:       (reference)         => apiRequest(`/api/payments/paystack/verify?reference=${reference}`),
+  createStripeIntent:    (amount)          => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
+  clickpesaPush:         (body)            => apiRequest("/api/payments/clickpesa/push", { method: "POST", body }),
+  clickpesaStatus:       (reference)       => apiRequest(`/api/payments/clickpesa/status?reference=${reference}`),
 };
 
 // ─── ADMIN ───────────────────────────────────────────────────────────────────

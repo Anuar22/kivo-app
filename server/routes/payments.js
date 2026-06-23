@@ -1,21 +1,17 @@
 const router  = require("express").Router();
 const https   = require("https");
+const crypto  = require("crypto");
+const { pool } = require("../db");
 const { auth } = require("../middleware/auth");
 
 // ── Stripe ────────────────────────────────────────────────────────────────────
-// POST /api/payments/stripe/intent
 router.post("/stripe/intent", auth, async (req, res) => {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) return res.status(503).json({ error: "Card payments are not configured on this server." });
-
+  if (!stripeKey) return res.status(503).json({ error: "Card payments are not configured." });
   const amount = Number(req.body.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ error: "Invalid amount." });
-  }
-
+  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "Invalid amount." });
   try {
-    const Stripe = require("stripe");
-    const stripe = Stripe(stripeKey);
+    const stripe = require("stripe")(stripeKey);
     const intent = await stripe.paymentIntents.create({
       amount:   Math.round(amount * 100),
       currency: process.env.STRIPE_CURRENCY || "usd",
@@ -25,46 +21,81 @@ router.post("/stripe/intent", auth, async (req, res) => {
     res.json({ clientSecret: intent.client_secret });
   } catch (err) {
     console.error("Stripe error:", err.message);
-    res.status(500).json({ error: "Could not create payment. Please try again." });
+    res.status(500).json({ error: "Could not create payment. Try again." });
   }
 });
 
-// ── Paystack ──────────────────────────────────────────────────────────────────
-// Paystack works via a simple redirect / hosted page flow:
-// 1. POST /api/payments/paystack/init  → get an authorization_url from Paystack
-// 2. Frontend redirects the user to that URL to pay on Paystack's hosted page
-// 3. Paystack redirects back to PAYSTACK_CALLBACK_URL with ?reference=xxx
-// 4. GET /api/payments/paystack/verify?reference=xxx  → confirm payment server-side
+// ── ClickPesa helpers ─────────────────────────────────────────────────────────
 //
 // Required env vars:
-//   PAYSTACK_SECRET_KEY   → your Paystack secret key (sk_live_... or sk_test_...)
-//   PAYSTACK_CURRENCY     → e.g. "NGN", "GHS", "KES", "TZS" (default: NGN)
-//   PAYSTACK_CALLBACK_URL → full URL Paystack sends the user back to after payment
-//                           e.g. https://kivo-app.vercel.app/paystack-callback
+//   CLICKPESA_CLIENT_ID      → from ClickPesa dashboard → Applications
+//   CLICKPESA_API_KEY        → from ClickPesa dashboard → Applications
+//
+// How it works:
+//   1. POST /api/payments/clickpesa/push  → generate token + send USSD push to customer's phone
+//   2. Customer receives USSD prompt → enters mobile money PIN
+//   3. ClickPesa hits POST /api/payments/clickpesa/webhook → we mark order paid
+//   4. GET  /api/payments/clickpesa/status?reference=xxx → frontend polls for result
 
-function paystackRequest(method, path, body) {
+const CLICKPESA_BASE = "https://api.clickpesa.com";
+
+// Generate ClickPesa access token using Client ID + API Key
+async function getClickPesaToken() {
+  const clientId = process.env.CLICKPESA_CLIENT_ID;
+  const apiKey   = process.env.CLICKPESA_API_KEY;
+  if (!clientId || !apiKey) throw new Error("ClickPesa is not configured.");
+
   return new Promise((resolve, reject) => {
-    const key = process.env.PAYSTACK_SECRET_KEY;
-    if (!key) return reject(new Error("Paystack is not configured."));
+    const payload = JSON.stringify({ client_id: clientId, api_key: apiKey });
+    const options = {
+      hostname: "api.clickpesa.com",
+      path:     "/third-parties/generate-token",
+      method:   "POST",
+      headers:  { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(payload) },
+    };
+    const req = https.request(options, r => {
+      let data = "";
+      r.on("data", c => { data += c; });
+      r.on("end",  () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.token) resolve(json.token);
+          else reject(new Error(json.message || "Token generation failed."));
+        } catch { reject(new Error("Invalid ClickPesa token response.")); }
+      });
+    });
+    req.on("error", reject);
+    req.write(payload);
+    req.end();
+  });
+}
 
+// Build checksum: HMAC-SHA256 of "amount|currency|orderReference|phoneNumber" using API key
+function buildChecksum(amount, currency, orderReference, phoneNumber) {
+  const apiKey = process.env.CLICKPESA_API_KEY || "";
+  const data   = `${amount}|${currency}|${orderReference}|${phoneNumber}`;
+  return crypto.createHmac("sha256", apiKey).update(data).digest("hex");
+}
+
+function clickpesaRequest(method, path, body, token) {
+  return new Promise((resolve, reject) => {
     const payload = body ? JSON.stringify(body) : null;
     const options = {
-      hostname: "api.paystack.co",
+      hostname: "api.clickpesa.com",
       path,
       method,
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: token,
         "Content-Type": "application/json",
         ...(payload ? { "Content-Length": Buffer.byteLength(payload) } : {}),
       },
     };
-
-    const req = https.request(options, (r) => {
+    const req = https.request(options, r => {
       let data = "";
-      r.on("data", chunk => { data += chunk; });
-      r.on("end",  ()    => {
+      r.on("data", c => { data += c; });
+      r.on("end",  () => {
         try { resolve(JSON.parse(data)); }
-        catch { reject(new Error("Invalid response from Paystack")); }
+        catch { reject(new Error("Invalid response from ClickPesa.")); }
       });
     });
     req.on("error", reject);
@@ -73,89 +104,105 @@ function paystackRequest(method, path, body) {
   });
 }
 
-// POST /api/payments/paystack/init
-// Body: { amount, email, orderId?, metadata? }
-// Returns: { authorizationUrl, reference }
-router.post("/paystack/init", auth, async (req, res) => {
-  if (!process.env.PAYSTACK_SECRET_KEY) {
+// POST /api/payments/clickpesa/push
+// Body: { orderId, amount, phoneNumber? }
+// Uses req.user.phone as fallback if no phoneNumber provided
+router.post("/clickpesa/push", auth, async (req, res) => {
+  if (!process.env.CLICKPESA_CLIENT_ID || !process.env.CLICKPESA_API_KEY) {
     return res.status(503).json({ error: "Mobile money payments are not configured." });
   }
 
-  const amount = Number(req.body.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return res.status(400).json({ error: "Invalid amount." });
-  }
+  const amount      = Number(req.body.amount);
+  const phoneNumber = (req.body.phoneNumber || req.user.phone || "").replace(/\s+/g, "");
+  const orderId     = req.body.orderId;
 
-  const email    = req.body.email || req.user.email;
-  const currency = process.env.PAYSTACK_CURRENCY || "NGN";
+  if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ error: "Invalid amount." });
+  if (!phoneNumber) return res.status(400).json({ error: "Phone number is required for mobile money." });
+  if (!orderId)     return res.status(400).json({ error: "orderId is required." });
 
-  // Paystack amounts are in the smallest currency unit (kobo for NGN, pesewas for GHS,
-  // cents for KES/TZS/USD). Multiply by 100.
-  const amountMinor = Math.round(amount * 100);
+  // Normalise to Tanzanian format: +255XXXXXXXXX or 255XXXXXXXXX
+  const phone = phoneNumber.startsWith("+") ? phoneNumber.slice(1) : phoneNumber.startsWith("0") ? "255" + phoneNumber.slice(1) : phoneNumber;
+
+  // Use order ref as orderReference (unique per transaction)
+  const { rows } = await pool.query("SELECT ref FROM orders WHERE id=$1 AND customer_id=$2", [orderId, req.user.id]);
+  if (!rows[0]) return res.status(404).json({ error: "Order not found." });
+
+  const orderReference = rows[0].ref;
+  const currency       = "TZS";
+  const amountStr      = String(Math.round(amount));
+  const checksum       = buildChecksum(amountStr, currency, orderReference, phone);
 
   try {
-    const data = await paystackRequest("POST", "/transaction/initialize", {
-      email,
-      amount:   amountMinor,
-      currency,
-      callback_url: process.env.PAYSTACK_CALLBACK_URL,
-      metadata: {
-        customer_id: req.user.id,
-        order_id:    req.body.orderId || null,
-        ...req.body.metadata,
-      },
-      channels: ["mobile_money", "card", "bank_transfer", "ussd"],
-    });
+    const token = await getClickPesaToken();
 
-    if (!data.status) {
-      return res.status(400).json({ error: data.message || "Paystack initialization failed." });
+    const result = await clickpesaRequest(
+      "POST",
+      "/third-parties/payments/initiate-ussd-push-request",
+      { amount: amountStr, currency, orderReference, phoneNumber: phone, checksum },
+      token
+    );
+
+    if (!result.id) {
+      console.error("ClickPesa push error:", result);
+      return res.status(400).json({ error: result.message || "USSD push failed. Check the phone number and try again." });
     }
 
+    // Store clickpesa payment id on the order for webhook matching
+    await pool.query("UPDATE orders SET clickpesa_payment_id=$1 WHERE id=$2", [result.id, orderId]);
+
     res.json({
-      authorizationUrl: data.data.authorization_url,
-      reference:        data.data.reference,
-      accessCode:       data.data.access_code,
+      paymentId:      result.id,
+      status:         result.status,   // "PROCESSING"
+      orderReference: result.orderReference,
+      message:        `A payment request has been sent to ${phoneNumber}. Enter your mobile money PIN to complete the payment.`,
     });
   } catch (err) {
-    console.error("Paystack init error:", err.message);
-    res.status(500).json({ error: "Could not initialize payment. Please try again." });
+    console.error("ClickPesa push error:", err.message);
+    res.status(500).json({ error: err.message || "Mobile money payment failed. Try again." });
   }
 });
 
-// GET /api/payments/paystack/verify?reference=xxx
-// Call this after Paystack redirects back with the reference.
-// Returns: { verified: true, amount, reference, status } or error
-router.get("/paystack/verify", auth, async (req, res) => {
+// GET /api/payments/clickpesa/status?reference=ORDER_REF
+// Frontend polls this after push to check if customer paid
+router.get("/clickpesa/status", auth, async (req, res) => {
   const { reference } = req.query;
   if (!reference) return res.status(400).json({ error: "reference is required." });
 
-  if (!process.env.PAYSTACK_SECRET_KEY) {
-    return res.status(503).json({ error: "Paystack is not configured." });
+  if (!process.env.CLICKPESA_CLIENT_ID || !process.env.CLICKPESA_API_KEY) {
+    return res.status(503).json({ error: "ClickPesa not configured." });
   }
 
   try {
-    const data = await paystackRequest("GET", `/transaction/verify/${encodeURIComponent(reference)}`);
+    const token  = await getClickPesaToken();
+    const result = await clickpesaRequest("GET", `/third-parties/payments/query-payment-status?orderReference=${encodeURIComponent(reference)}`, null, token);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-    if (!data.status || data.data.status !== "success") {
-      return res.status(400).json({
-        verified: false,
-        error: data.message || "Payment was not successful.",
-        paystackStatus: data.data?.status,
-      });
+// POST /api/payments/clickpesa/webhook
+// ClickPesa calls this when payment is confirmed
+// Add this URL in ClickPesa dashboard → Webhooks: https://kivo-backend-9h1x.onrender.com/api/payments/clickpesa/webhook
+router.post("/clickpesa/webhook", async (req, res) => {
+  try {
+    const { orderReference, status, collectedAmount } = req.body;
+    console.log("[ClickPesa webhook]", req.body);
+
+    if (status === "SUCCESSFUL" && orderReference) {
+      // Find order by ref and mark payment confirmed
+      await pool.query(
+        "UPDATE orders SET payment_status='paid', payment_confirmed_at=NOW() WHERE ref=$1",
+        [orderReference]
+      );
+      console.log(`[ClickPesa] Order ${orderReference} marked as paid. Amount: ${collectedAmount}`);
     }
 
-    res.json({
-      verified:  true,
-      reference: data.data.reference,
-      amount:    data.data.amount / 100, // back to major units
-      currency:  data.data.currency,
-      status:    data.data.status,
-      channel:   data.data.channel,    // "mobile_money", "card", etc.
-      paidAt:    data.data.paid_at,
-    });
+    // Always respond 200 to ClickPesa so they don't retry
+    res.json({ received: true });
   } catch (err) {
-    console.error("Paystack verify error:", err.message);
-    res.status(500).json({ error: "Could not verify payment. Please try again." });
+    console.error("[ClickPesa webhook error]", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
