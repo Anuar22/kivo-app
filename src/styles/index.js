@@ -233,11 +233,16 @@ const CSS = `
   .page { padding: 0; }
 
   /* ── HOME ── */
+  .home-page {
+    margin-top: calc(-1 * var(--nav-h));
+  }
   .home-hero {
     background:
       linear-gradient(145deg, rgba(229,57,53,0.18), rgba(255,255,255,0) 42%),
       linear-gradient(135deg, #141414 0%, #2a190d 100%);
-    padding: 26px 16px 28px; position: relative; overflow: hidden;
+    padding: 26px 16px 28px;
+    padding-top: calc(var(--nav-h) + 26px);
+    position: relative; overflow: hidden;
   }
   .home-hero::before {
     content: '🍽️'; position: absolute; top: 18px; right: 18px;
