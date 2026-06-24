@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ordersApi, subscribeOrderSSE, reviewsApi } from "../api/index.js";
 import { STATUSES, STATUS_ICONS } from "../data/index.js";
+import { fmt } from "../utils/currency.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 
 function timeAgo(ts) {
@@ -133,7 +134,7 @@ function OrderCard({ order, onUpdate, reviewedIds, onReviewed }) {
           {order.items?.map((item, i) => (
             <div key={i} className="ov2-item-row">
               <span><span className="ov2-item-qty">{item.qty}×</span> {item.name}</span>
-              <span>${(Number(item.price) * item.qty).toFixed(2)}</span>
+              <span>{fmt(Number(item.price) * item.qty)}</span>
             </div>
           ))}
         </div>
@@ -148,7 +149,7 @@ function OrderCard({ order, onUpdate, reviewedIds, onReviewed }) {
         </button>
         <div className="ov2-total">
           <span>Total</span>
-          <span className="ov2-total-amount">${Number(order.total).toFixed(2)}</span>
+          <span className="ov2-total-amount">{fmt(order.total)}</span>
         </div>
       </div>
 

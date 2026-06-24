@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ordersApi, subscribeVendorSSE } from "../api/index.js";
+import { fmt } from "../utils/currency.js";
 
 function VStatusPill({ status }) {
   const map = {
@@ -48,7 +49,7 @@ function OrderCard({ order, onAdvance, onReject, showActions }) {
         {order.items?.map((item, i) => (
           <div key={i} className="vorder-item-row">
             <span><span className="qty">{item.qty}×</span>{item.name}</span>
-            <span className="price">${(Number(item.price) * item.qty).toFixed(2)}</span>
+            <span className="price">{fmt(Number(item.price) * item.qty)}</span>
           </div>
         ))}
       </div>
@@ -62,7 +63,7 @@ function OrderCard({ order, onAdvance, onReject, showActions }) {
       <div className="vorder-card-footer">
         <div>
           <div className="vorder-total-label">Order total</div>
-          <div className="vorder-total-amount">${Number(order.total).toFixed(2)}</div>
+          <div className="vorder-total-amount">{fmt(order.total)}</div>
         </div>
         {showActions && (
           <div className="action-btns">
@@ -239,11 +240,11 @@ export default function VOrdersTab({ showToast }) {
           {stats && (
             <>
               <div className="stats-row">
-                <StatCard label="Today's revenue" value={`$${Number(stats.todayRevenue).toFixed(2)}`} sub={`${stats.todayOrders} orders`} valueStyle={{ color: "#22c55e", fontSize: 18 }} />
-                <StatCard label="This week" value={`$${Number(stats.weekRevenue).toFixed(2)}`} sub={`${stats.weekOrders} orders`} valueStyle={{ color: "#e53935", fontSize: 18 }} />
+                <StatCard label="Today's revenue" value={fmt(stats.todayRevenue)} sub={`${stats.todayOrders} orders`} valueStyle={{ color: "#22c55e", fontSize: 18 }} />
+                <StatCard label="This week" value={fmt(stats.weekRevenue)} sub={`${stats.weekOrders} orders`} valueStyle={{ color: "#e53935", fontSize: 18 }} />
               </div>
               <div className="stats-row" style={{ marginTop: 0 }}>
-                <StatCard label="All-time revenue" value={`$${Number(stats.totalRevenue).toFixed(2)}`} sub={`${stats.totalOrders} completed`} valueStyle={{ color: "#0f0f0f", fontSize: 18 }} />
+                <StatCard label="All-time revenue" value={fmt(stats.totalRevenue)} sub={`${stats.totalOrders} completed`} valueStyle={{ color: "#0f0f0f", fontSize: 18 }} />
               </div>
             </>
           )}

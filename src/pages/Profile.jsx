@@ -3,6 +3,7 @@ import { useAccount } from "../context/AccountContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
+import { fmt } from "../utils/currency.js";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -199,7 +200,7 @@ export default function Profile({ navigate }) {
             </div>
             <div className="pv2-stat-divider" />
             <div className="pv2-stat">
-              <span className="pv2-stat-num">${Number(stats.totalSpent).toFixed(0)}</span>
+              <span className="pv2-stat-num">{fmt(stats.totalSpent)}</span>
               <span className="pv2-stat-label">Spent</span>
             </div>
             <div className="pv2-stat-divider" />

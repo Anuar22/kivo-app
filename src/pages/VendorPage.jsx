@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext.jsx";
 import { vendorsApi, apiRequest } from "../api/index.js";
+import { fmt } from "../utils/currency.js";
 
 function StarRating({ value, onChange, size = 28 }) {
   const [hovered, setHovered] = useState(0);
@@ -34,7 +35,7 @@ function MenuItem({ item, vendor, addItem, getQty, removeItem }) {
         </div>
         <p>{item.description}</p>
         <div className="menu-item-bottom">
-          <span className="menu-item-price">${Number(item.price).toFixed(2)}</span>
+          <span className="menu-item-price">{fmt(item.price)}</span>
           {qty === 0 ? (
             <button className="add-btn" onClick={() => addItem(item, vendor)}>+ Add</button>
           ) : (
@@ -162,7 +163,7 @@ export default function VendorPage({ vendor, deliveredOrderId }) {
           <div className="vendor-hero-meta">
             <span>⭐ {vendor.rating} ({reviewCount})</span>
             <span>⏱ {deliveryTime}</span>
-            <span>🛵 ${deliveryFee.toFixed(2)} delivery</span>
+            <span>🛵 {fmt(deliveryFee)} delivery</span>
           </div>
         </div>
       </div>
