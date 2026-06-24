@@ -33,7 +33,7 @@ function VMenuItemRow({ item, onToggle, onEdit }) {
   );
 }
 
-const EMPTY_FORM = { name: "", price: "", image: "🍽️", image_url: "", description: "", available: true, popular: false, prep_time_minutes: "" };
+const EMPTY_FORM = { name: "", price: "", image: "🍔", image_url: "", description: "", available: true, popular: false, prep_time_minutes: "" };
 
 export default function VMenuTab({ showToast }) {
   const [menu, setMenu]             = useState([]);
@@ -252,8 +252,8 @@ export default function VMenuTab({ showToast }) {
             </div>
             <div className="form-row">
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Price ($)</label>
-                <input className="form-input" type="number" step="0.50" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="0.00" />
+                <label className="form-label">Price (TSh)</label>
+                <input className="form-input" type="number" step="500" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="e.g. 5000" />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Prep Time (min)</label>
