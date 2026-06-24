@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { adminApi } from "../api/index.js";
 import { useAccount } from "../context/AccountContext.jsx";
+import { fmt } from "../utils/currency.js";
 
 function StatCard({ label, value, accent }) {
   return (
@@ -37,7 +38,7 @@ function OverviewTab({ showToast }) {
       </div>
       <div className="stats-row">
         <StatCard label="Total orders" value={stats.totalOrders} />
-        <StatCard label="Revenue (delivered)" value={`TSh ${Number(stats.totalRevenue).toLocaleString()}`} />
+        <StatCard label="Revenue (delivered)" value={fmt(stats.totalRevenue)} />
       </div>
     </div>
   );
