@@ -149,8 +149,14 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
         markersRef.current.push(marker);
       });
 
-      map.on("click", () => setSelected(null)); // tap map to deselect
-      map.on("load", () => { if (mounted) setMapReady(true); });
+      map.on("click", () => setSelected(null));
+      map.on("load", () => {
+        if (mounted) {
+          map.resize();
+          setTimeout(() => { if (mounted) map.resize(); }, 300);
+          setMapReady(true);
+        }
+      });
       mapRef.current = map;
     }).catch(console.error);
 
@@ -201,8 +207,11 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
       </div>
 
       {/* Map */}
-      <div style={{ flex: 1, position: "relative" }}>
-        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <div
+          ref={containerRef}
+          style={{ position: "absolute", inset: 0 }}
+        />
 
         {/* Loading overlay */}
         {!mapReady && (
