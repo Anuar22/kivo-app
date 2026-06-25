@@ -67,9 +67,9 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
-          // Catch-all rule for all backend endpoints to prevent "Failed to Fetch" on orders/cart processing
+          // 1. Forces your Render production domain straight to the live network
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            urlPattern: /^https:\/\/kivo-backend-9h1x\.onrender\.com\/.*/,
             handler: 'NetworkOnly',
             options: {
               backgroundSync: {
@@ -80,6 +80,12 @@ export default defineConfig({
               }
             }
           },
+          // 2. Local fallback api rule for any relative routing setups
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
+          },
+          // 3. Mapbox Tiles
           {
             urlPattern: /^https:\/\/api\.mapbox\.com\/.*/,
             handler: 'CacheFirst',
@@ -88,6 +94,7 @@ export default defineConfig({
               expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
             },
           },
+          // 4. Cloudinary Images
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/,
             handler: 'CacheFirst',
@@ -96,6 +103,7 @@ export default defineConfig({
               expiration: { maxEntries: 100, maxAgeSeconds: 604800 },
             },
           },
+          // 5. Google Fonts
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
             handler: 'CacheFirst',
