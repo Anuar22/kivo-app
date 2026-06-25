@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['favicon.svg', 'icons/*.png'],
+      includeAssets: ['/favicon.svg', '/icons/*.png'], // Absolute paths fix the Android Manifest download error
       manifest: {
         name: 'Kivo — Food Delivery',
         short_name: 'Kivo',
@@ -67,14 +67,18 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
+          // Catch-all rule for all backend endpoints to prevent "Failed to Fetch" on orders/cart processing
           {
-            urlPattern: /\/api\/vendors/,
-            handler: 'NetworkFirst',
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
             options: {
-              cacheName: 'api-vendors',
-              expiration: { maxEntries: 50, maxAgeSeconds: 300 },
-              networkTimeoutSeconds: 5,
-            },
+              backgroundSync: {
+                name: 'order-queue',
+                options: {
+                  maxRetentionTime: 24 * 60 // Retries order placement later if network cuts out
+                }
+              }
+            }
           },
           {
             urlPattern: /^https:\/\/api\.mapbox\.com\/.*/,
