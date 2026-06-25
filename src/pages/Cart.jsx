@@ -193,7 +193,7 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
       {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{error}</p>}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <button onClick={pay} disabled={paying || !ready} style={{ flex: 1, background: paying ? "#b0a89f" : "#0f0f0f", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", cursor: paying ? "not-allowed" : "pointer" }}>
-          {paying ? "Processing…" : `Pay $${Number(amount).toFixed(2)}`}
+          {paying ? "Processing…" : `Pay ${Math.round(amount).toLocaleString()} TSh`}
         </button>
         <button onClick={onCancel} disabled={paying} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
       </div>
@@ -216,7 +216,6 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
       const result = await paymentsApi.clickpesaPush({ orderId, amount, phoneNumber: phone.trim() });
       setMessage(result.message || "Check your phone for a payment prompt.");
       setStatus("waiting");
-      // Poll for payment confirmation every 5 seconds for up to 3 minutes
       let attempts = 0;
       pollRef.current = setInterval(async () => {
         attempts++;
@@ -318,13 +317,14 @@ export default function Cart({ navigate }) {
   const [payMethod,      setPayMethod]       = useState("cash");
   const [showCardForm,   setShowCardForm]    = useState(false);
   const [showMobileForm, setShowMobileForm]  = useState(false);
-  const [pendingOrder,   setPendingOrder]    = useState(null); // { id, ref } after order created
+  const [pendingOrder,   setPendingOrder]    = useState(null); 
   const [placed,         setPlaced]          = useState(false);
   const [loading,        setLoading]         = useState(false);
   const [error,          setError]           = useState("");
 
-  const deliveryFee     = items.length > 0 ? 2.00 : 0;
-  const taxes           = items.length > 0 ? Math.round(total * 0.05 * 100) / 100 : 0;
+  // Adjusted constants to represent plain numeric TSh valuations
+  const deliveryFee     = items.length > 0 ? 2000 : 0; 
+  const taxes           = items.length > 0 ? Math.round(total * 0.05) : 0;
   const grandTotal      = total + deliveryFee + taxes;
   const stripeAvailable = !!PUBLISHABLE_KEY;
 
@@ -334,6 +334,8 @@ export default function Cart({ navigate }) {
   }, [payMethod]);
 
   const createOrder = async (paymentMethod) => {
+    // Adding a runtime timestamp forces the PWA worker to drop cached interception maps on form submit
+    const cacheBuster = `?t=${Date.now()}`;
     const { order } = await ordersApi.place({
       vendorId,
       address:       delivery.address,
@@ -341,7 +343,7 @@ export default function Cart({ navigate }) {
       deliveryLng:   delivery.lng,
       paymentMethod,
       items: items.map(i => ({ menuItemId: i.id, qty: i.qty })),
-    });
+    }, cacheBuster);
     return order;
   };
 
@@ -350,21 +352,18 @@ export default function Cart({ navigate }) {
     setError(""); setLoading(true);
 
     try {
-      // Cash — create order and done
       if (payMethod === "cash") {
         await createOrder("cash");
         setPlaced(true);
         return;
       }
 
-      // Card — show Stripe form (order created after Stripe succeeds)
       if (payMethod === "card" && stripeAvailable) {
         setLoading(false);
         setShowCardForm(true);
         return;
       }
 
-      // Mobile money — create order first, then show ClickPesa form
       if (payMethod === "mobile") {
         const order = await createOrder("mobile");
         setPendingOrder({ id: order.id, ref: order.ref });
@@ -414,7 +413,7 @@ export default function Cart({ navigate }) {
               <div className="cart-item-emoji">{item.image}</div>
               <div className="cart-item-info">
                 <p className="cart-item-name">{item.name}</p>
-                <p className="cart-item-price">${(item.price * item.qty).toFixed(2)}</p>
+                <p className="cart-item-price">{(item.price * item.qty).toLocaleString()} TSh</p>
               </div>
               <div className="qty-control">
                 <button onClick={() => removeItem(item.id)}>−</button>
@@ -447,11 +446,11 @@ export default function Cart({ navigate }) {
         {/* Summary */}
         <p className="cv2-section-title">Order summary</p>
         <div className="cv2-summary">
-          <div className="cv2-summary-row"><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
-          <div className="cv2-summary-row"><span>Taxes (5%)</span><span>${taxes.toFixed(2)}</span></div>
-          <div className="cv2-summary-row"><span>Delivery fee</span><span>${deliveryFee.toFixed(2)}</span></div>
+          <div className="cv2-summary-row"><span>Subtotal</span><span>{total.toLocaleString()} TSh</span></div>
+          <div className="cv2-summary-row"><span>Taxes (5%)</span><span>{taxes.toLocaleString()} TSh</span></div>
+          <div className="cv2-summary-row"><span>Delivery fee</span><span>{deliveryFee.toLocaleString()} TSh</span></div>
           <div className="cv2-summary-divider" />
-          <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>${grandTotal.toFixed(2)}</span></div>
+          <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>{grandTotal.toLocaleString()} TSh</span></div>
         </div>
 
         {/* Payment methods */}
@@ -510,7 +509,7 @@ export default function Cart({ navigate }) {
         <div className="cv2-bottom-bar">
           <div className="cv2-bottom-total">
             <span className="cv2-bottom-total-label">Total amt</span>
-            <span className="cv2-bottom-total-amount">${grandTotal.toFixed(2)}</span>
+            <span className="cv2-bottom-total-amount">{grandTotal.toLocaleString()} TSh</span>
           </div>
           <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || !delivery.address}>
             {loading ? "Placing…" : "Pay Now"}
