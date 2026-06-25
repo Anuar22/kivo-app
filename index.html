@@ -2,9 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>kivo-app</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#e53935" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kivo" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- SEO -->
+    <meta name="description" content="Order food from your favourite local restaurants — fast delivery across Tanzania" />
+    <meta name="keywords" content="food delivery Tanzania, order food online, Kivo" />
+
+    <!-- Open Graph (for sharing links) -->
+    <meta property="og:title" content="Kivo — Food Delivery" />
+    <meta property="og:description" content="Order food from your favourite local restaurants" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512.png" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Kivo — Food Delivery</title>
   </head>
   <body>
     <div id="root"></div>
