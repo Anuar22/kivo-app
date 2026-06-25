@@ -34,6 +34,11 @@ const CSS = `
     --radius: 12px;
     --nav-h: 60px;
     --bot-h: 68px;
+    /* Safe area insets for PWA standalone mode (notch/status bar/home indicator) */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
     --shadow-sm: 0 1px 2px rgba(15,15,15,0.04), 0 8px 20px rgba(15,15,15,0.05);
     --shadow-md: 0 12px 30px rgba(15,15,15,0.11);
 
@@ -170,7 +175,9 @@ const CSS = `
   /* ── CUSTOMER LAYOUT ── */
   .navbar {
     position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 420px; height: var(--nav-h);
+    width: 100%; max-width: 420px;
+    height: calc(var(--nav-h) + var(--sat));
+    padding-top: var(--sat);
     background: rgba(247,245,242,0.9); backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border); z-index: 100;
     display: flex; align-items: center;
@@ -209,10 +216,12 @@ const CSS = `
 
   .bottom-nav {
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 420px; height: var(--bot-h);
+    width: 100%; max-width: 420px;
+    height: calc(var(--bot-h) + var(--sab));
+    padding-bottom: var(--sab);
     background: rgba(247,245,242,0.92); backdrop-filter: blur(16px);
     border-top: 1px solid var(--border); z-index: 100;
-    display: flex; align-items: center;
+    display: flex; align-items: flex-start; padding-top: 0;
   }
   .bottom-tab {
     flex: 1; border: none; background: none; cursor: pointer;
@@ -225,7 +234,8 @@ const CSS = `
   .bottom-tab.active svg { transform: translateY(-2px); }
 
   .main-content {
-    padding-top: var(--nav-h); padding-bottom: var(--bot-h);
+    padding-top: calc(var(--nav-h) + var(--sat));
+    padding-bottom: calc(var(--bot-h) + var(--sab));
     min-height: 100svh; height: 100svh; overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -234,14 +244,14 @@ const CSS = `
 
   /* ── HOME ── */
   .home-page {
-    margin-top: calc(-1 * var(--nav-h));
+    margin-top: calc(-1 * (var(--nav-h) + var(--sat)));
   }
   .home-hero {
     background:
       linear-gradient(145deg, rgba(229,57,53,0.18), rgba(255,255,255,0) 42%),
       linear-gradient(135deg, #141414 0%, #2a190d 100%);
     padding: 26px 16px 28px;
-    padding-top: calc(var(--nav-h) + 26px);
+    padding-top: calc(var(--nav-h) + var(--sat) + 26px);
     position: relative; overflow: hidden;
   }
   .home-hero::before {
@@ -393,7 +403,7 @@ const CSS = `
 
   /* ── CUSTOMER ORDERS ── */
   .orders-page { padding: 0; }
-  .orders-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--card); padding: 0 16px; position: sticky; top: var(--nav-h); z-index: 10; }
+  .orders-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--card); padding: 0 16px; position: sticky; top: calc(var(--nav-h) + var(--sat)); z-index: 10; }
   .otab { flex: 1; padding: 14px; border: none; background: none; cursor: pointer; font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--muted); border-bottom: 2px solid transparent; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
   .otab.active { color: var(--orange); border-bottom-color: var(--orange); }
   .otab-badge { background: var(--orange); color: white; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
@@ -450,6 +460,7 @@ const CSS = `
     background: var(--surface);
     border-bottom: 1px solid var(--line);
     padding: 18px 16px 14px;
+    padding-top: calc(var(--sat) + 18px);
     position: sticky; top: 0; z-index: 50;
   }
   .vd-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -776,9 +787,9 @@ const CSS = `
   .pv2-banner {
     position: relative;
     background: linear-gradient(135deg, #ff5252 0%, #e53935 60%, #c62828 100%);
-    height: 150px; border-radius: 0 0 32px 32px;
+    height: calc(150px + var(--sat)); border-radius: 0 0 32px 32px;
     display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 18px 20px; overflow: hidden;
+    padding: 18px 20px; padding-top: calc(var(--sat) + 18px); overflow: hidden;
   }
   .pv2-banner::before, .pv2-banner::after {
     content: ""; position: absolute; border-radius: 50%;
@@ -1064,16 +1075,16 @@ const CSS = `
   }
 
   @media (min-width: 520px) {
-    body { padding: 18px 0; }
-    .kivo-root {
+    body:not(.pwa-standalone) { padding: 18px 0; }
+    body:not(.pwa-standalone) .kivo-root {
       min-height: calc(100svh - 36px);
       height: calc(100svh - 36px);
       border-radius: 28px;
     }
     .navbar, .bottom-nav { max-width: 420px; }
-    .navbar { top: 18px; }
-    .bottom-nav { bottom: 18px; border-radius: 0 0 28px 28px; overflow: hidden; }
-    .main-content { height: calc(100svh - 36px); min-height: calc(100svh - 36px); }
+    body:not(.pwa-standalone) .navbar { top: 18px; }
+    body:not(.pwa-standalone) .bottom-nav { bottom: 18px; border-radius: 0 0 28px 28px; overflow: hidden; }
+    body:not(.pwa-standalone) .main-content { height: calc(100svh - 36px); min-height: calc(100svh - 36px); }
     .toast { bottom: 42px; }
   }
 
