@@ -8,13 +8,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['/favicon.svg', '/icons/*.png'], // Absolute paths fix the Android Manifest download error
+      includeAssets: ['/favicon.svg', '/icons/*.png'],
       manifest: {
         name: 'Kivo — Food Delivery',
         short_name: 'Kivo',
         description: 'Order food from your favourite local restaurants. Fast delivery across Tanzania.',
         theme_color: '#e53935',
-        background_color: '#e53935',  // red splash screen on Android
+        background_color: '#e53935',  
         display: 'standalone',
         display_override: ['standalone', 'minimal-ui'],
         orientation: 'portrait',
@@ -23,7 +23,6 @@ export default defineConfig({
         lang: 'en',
         dir: 'ltr',
         icons: [
-          // Regular icons — any purpose
           {
             src: '/icons/icon-192.png',
             sizes: '192x192',
@@ -36,8 +35,6 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any',
           },
-          // Maskable icon — separate entry, Android adaptive icons
-          // Logo kept within the center 80% safe zone
           {
             src: '/icons/icon-maskable-512.png',
             sizes: '512x512',
@@ -67,25 +64,25 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
-          // 1. Forces your Render production domain straight to the live network
+          // 1. BULLETPROOF CATCH-ALL: This function intercepts EVERY request and completely 
+          // exempts anything going to Render or containing /api/ from being cached or blocked.
           {
-            urlPattern: /^https:\/\/kivo-backend-9h1x\.onrender\.com\/.*/,
+            urlPattern: ({ url }) => {
+              const isRenderBackend = url.hostname.includes('kivo-backend-9h1x.onrender.com');
+              const isLocalApiPath = url.pathname.startsWith('/api/');
+              return isRenderBackend || isLocalApiPath;
+            },
             handler: 'NetworkOnly',
             options: {
               backgroundSync: {
                 name: 'order-queue',
                 options: {
-                  maxRetentionTime: 24 * 60 // Retries order placement later if network cuts out
+                  maxRetentionTime: 24 * 60
                 }
               }
             }
           },
-          // 2. Local fallback api rule for any relative routing setups
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
-            handler: 'NetworkOnly',
-          },
-          // 3. Mapbox Tiles
+          // 2. Mapbox Tiles
           {
             urlPattern: /^https:\/\/api\.mapbox\.com\/.*/,
             handler: 'CacheFirst',
@@ -94,7 +91,7 @@ export default defineConfig({
               expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
             },
           },
-          // 4. Cloudinary Images
+          // 3. Cloudinary Images
           {
             urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/,
             handler: 'CacheFirst',
@@ -103,7 +100,7 @@ export default defineConfig({
               expiration: { maxEntries: 100, maxAgeSeconds: 604800 },
             },
           },
-          // 5. Google Fonts
+          // 4. Google Fonts
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
             handler: 'CacheFirst',
