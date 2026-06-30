@@ -89,23 +89,35 @@ export default function Profile({ navigate }) {
   };
 
   return (
-    // Explicit padding reset on the root layout view container
-    <div style={{ background: "#fafaf9", minHeight: "100vh", margin: 0, padding: 0, fontFamily: "DM Sans, sans-serif", boxSizing: "border-box" }}>
-      
-      {/* Top Header Row — Starts at the very absolute 0 pixel mark */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 10px 20px", background: "white", borderBottom: "1px solid #f4f1ed" }}>
+    // Pulled up by (navbar height + safe-area-inset-top) so the white header
+    // sits flush under the status bar with no gap above "My Profile".
+    <div style={{
+      background: "#fafaf9",
+      minHeight: "100vh",
+      margin: "calc(-1 * (var(--nav-h) + var(--sat))) 0 0",
+      padding: 0,
+      fontFamily: "DM Sans, sans-serif",
+      boxSizing: "border-box",
+    }}>
+
+      {/* Top Header Row — padding-top absorbs the safe area instead of leaving a gap */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "calc(var(--sat) + 20px) 20px 10px 20px",
+        background: "white", borderBottom: "1px solid #f4f1ed",
+      }}>
         <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#362f2d" strokeWidth="2.5">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
         </button>
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#362f2d" }}>Edit Profile</h2>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#362f2d" }}>My Profile</h2>
         <div style={{ width: 32 }} />
       </div>
 
       {/* Main Form content alignment */}
       <div style={{ maxWidth: 420, margin: "0 auto", padding: "20px 16px" }}>
-        
+
         {/* Simple Top Identity Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
           <div style={{ width: 54, height: 54, borderRadius: 14, background: "#ffebea", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#e53935" }}>
@@ -129,16 +141,23 @@ export default function Profile({ navigate }) {
                 <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#362f2d" }}>{fmt(stats.totalSpent)}</span>
                 <span style={{ fontSize: 10, color: "#7a7065" }}>Spent</span>
               </div>
+              <div style={{ width: 1, background: "#e8e4df" }} />
+              <div style={{ textAlign: "center" }}>
+                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#362f2d" }}>{stats.activeOrders}</span>
+                <span style={{ fontSize: 10, color: "#7a7065" }}>Active</span>
+              </div>
             </div>
           )}
 
           <Field label="Name" value={form.name} onChange={set("name")} placeholder="Full Name" />
           <Field label="Delivery address" value={form.address} onChange={set("address")} placeholder="Address Line" />
-          <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="Phone Connection" />
+          <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="Phone number" />
+
+          {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: -8, marginBottom: 16 }}>{error}</p>}
 
           <div style={{ height: 1, background: "#f5f3f0", margin: "12px 0" }} />
-          
-          <ListRow icon="💳" label="Payment Setup" onClick={() => {}} />
+
+          <ListRow icon="💳" label="Payment Details" onClick={() => navigate("cart")} />
           <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
         </div>
 
@@ -148,10 +167,10 @@ export default function Profile({ navigate }) {
             type="button" onClick={save} disabled={saving}
             style={{ 
               flex: 1.2, height: 48, background: "#362f2d", color: "white", border: "none", 
-              borderRadius: 14, fontWeight: 700, fontSize: 14, cursor: "pointer"
+              borderRadius: 14, fontWeight: 700, fontSize: 14, cursor: saving ? "not-allowed" : "pointer"
             }}
           >
-            {saving ? "Saving…" : "Save Data"}
+            {saving ? "Saving…" : "Save Changes"}
           </button>
           <button 
             type="button" onClick={logout}
@@ -164,12 +183,13 @@ export default function Profile({ navigate }) {
           </button>
         </div>
 
+        <div style={{ height: 30 }} />
       </div>
 
       {success && (
         <SuccessModal
           title="Updated"
-          message="Profile synced."
+          message="Your profile has been updated successfully."
           buttonLabel="OK"
           onClose={() => setSuccess(false)}
         />
