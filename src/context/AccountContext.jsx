@@ -35,6 +35,15 @@ export function AccountProvider({ children }) {
     return data;
   };
 
+  // Google sign-in/sign-up. role/businessName are only used the first time
+  // this Google account is seen (i.e. account creation) — ignored on
+  // subsequent logins by the same Google account.
+  const loginWithGoogle = async (credential, role = "customer", businessName) => {
+    const data = await authApi.google({ credential, role, businessName });
+    completeAuth(data);
+    return data;
+  };
+
   const verifyEmail = async (email, code) => {
     const data = await authApi.verifyEmail({ email, code });
     completeAuth(data);
@@ -67,7 +76,7 @@ export function AccountProvider({ children }) {
 
   return (
     <AccountCtx.Provider value={{
-      user, initializing, register, login, logout, updateUser,
+      user, initializing, register, login, loginWithGoogle, logout, updateUser,
       verifyEmail, resendCode, forgotPassword, resetPassword,
     }}>
       {children}

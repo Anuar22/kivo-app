@@ -49,6 +49,7 @@ export const authApi = {
   me:             ()     => apiRequest("/api/auth/me"),
   login:          (body) => apiRequest("/api/auth/login",          { method: "POST", body }),
   register:       (body) => apiRequest("/api/auth/register",       { method: "POST", body }),
+  google:         (body) => apiRequest("/api/auth/google",         { method: "POST", body }),
   verifyEmail:    (body) => apiRequest("/api/auth/verify-email",   { method: "POST", body }),
   resendCode:     (body) => apiRequest("/api/auth/resend-code",    { method: "POST", body }),
   forgotPassword: (body) => apiRequest("/api/auth/forgot-password",{ method: "POST", body }),

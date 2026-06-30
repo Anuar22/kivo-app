@@ -1,9 +1,13 @@
 const router = require("express").Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
 const { pool } = require("../db");
 const { auth } = require("../middleware/auth");
 const { generateCode, sendOtpEmail } = require("../email");
+
+const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 
 const OTP_TTL_MINUTES = 10;
 const OTP_MAX_ATTEMPTS_WINDOW_MIN = 60; // rate-limit window
@@ -122,17 +126,14 @@ router.post("/register", async (req, res) => {
     client.release();
   }
 
-  // Account creation succeeded and the transaction is closed. Sending the
-  // OTP email is a separate concern from here on — if it fails, the account
+  // Account creation succeeded and the transaction is closed. Respond to the
+  // user right away instead of making them wait on the email round-trip —
+  // sending the OTP is fired in the background. If it fails, the account
   // still exists and the user can use "resend code" to try again, instead
-  // of the whole registration silently failing.
-  try {
-    const otpResult = await issueOtp(email, "verify_email");
-    console.log(`[register] OTP issue result for ${email}:`, otpResult);
-  } catch (err) {
-    console.error("Register error (sending OTP):", err.message);
-    // Don't fail the request — the account exists, they can hit resend-code.
-  }
+  // of the whole registration silently failing or feeling slow.
+  issueOtp(email, "verify_email")
+    .then(otpResult => console.log(`[register] OTP issue result for ${email}:`, otpResult))
+    .catch(err => console.error("Register error (sending OTP):", err.message));
 
   res.status(201).json({
     pendingVerification: true,
@@ -218,7 +219,106 @@ router.post("/login", async (req, res) => {
   res.json({ user: safeUser(user), token: makeToken(user) });
 });
 
-// POST /api/auth/forgot-password — sends a reset code
+// POST /api/auth/google — sign in or register via Google
+// Body: { credential, role?, businessName? }
+//   credential   = Google ID token from the frontend Google Sign-In button
+//   role         = "customer" | "vendor" — only used the FIRST time this
+//                  Google account signs in (i.e. on account creation)
+//   businessName = required if role is "vendor" and this is a first-time signup
+router.post("/google", async (req, res) => {
+  if (!googleClient) {
+    return res.status(503).json({ error: "Google sign-in is not configured on this server." });
+  }
+
+  const { credential, role = "customer", businessName } = req.body;
+  if (!credential) return res.status(400).json({ error: "Missing Google credential." });
+  if (!["customer", "vendor"].includes(role)) {
+    return res.status(400).json({ error: "Role must be customer or vendor." });
+  }
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch (err) {
+    console.error("Google token verification failed:", err.message);
+    return res.status(401).json({ error: "Could not verify Google sign-in. Please try again." });
+  }
+
+  const { sub: googleId, email, name, email_verified: googleEmailVerified } = payload;
+  if (!email) return res.status(400).json({ error: "Google account has no email." });
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // 1. Try to find an existing user by google_id first, then by email
+    //    (covers the case where they signed up with a password earlier
+    //    and are now using Google sign-in for the first time on the same email)
+    let { rows } = await client.query("SELECT * FROM users WHERE google_id=$1", [googleId]);
+    let user = rows[0];
+
+    if (!user) {
+      const byEmail = await client.query("SELECT * FROM users WHERE email=$1", [email]);
+      user = byEmail.rows[0];
+
+      if (user) {
+        // Existing password-based account — link the Google ID to it
+        const updated = await client.query(
+          "UPDATE users SET google_id=$1, email_verified=TRUE WHERE id=$2 RETURNING *",
+          [googleId, user.id]
+        );
+        user = updated.rows[0];
+      }
+    }
+
+    if (!user) {
+      // Brand new account via Google
+      if (role === "vendor" && !businessName) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "Restaurant/shop name is required for vendor accounts." });
+      }
+
+      // Google users don't set a password — generate a random one internally
+      // so the `password` NOT NULL column is satisfied; they'll never use it
+      // unless they later set one via a "set password" flow.
+      const randomPassword = crypto.randomBytes(32).toString("hex");
+      const hash = await bcrypt.hash(randomPassword, 12);
+
+      const { rows: created } = await client.query(
+        `INSERT INTO users (name, email, password, role, business_name, email_verified, google_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [name || email.split("@")[0], email, hash, role, businessName || null, !!googleEmailVerified, googleId]
+      );
+      user = created[0];
+
+      if (role === "vendor") {
+        await client.query(
+          `INSERT INTO vendors (user_id, name, category, description)
+           VALUES ($1,$2,$3,$4)`,
+          [user.id, businessName || user.name, "Local Food", "Welcome to our restaurant!"]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+
+    if (user.is_banned) {
+      return res.status(403).json({ error: "Your account has been suspended. Contact support for help." });
+    }
+
+    res.json({ user: safeUser(user), token: makeToken(user) });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    console.error("Google sign-in error:", err.message);
+    res.status(500).json({ error: "Google sign-in failed. Please try again." });
+  } finally {
+    client.release();
+  }
+});
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required." });

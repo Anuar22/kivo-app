@@ -156,6 +156,33 @@ const CSS = `
     font-size: 13px; cursor: pointer; padding: 0; font-family: var(--font-body);
   }
 
+  .av2-back {
+    background: none; border: none; cursor: pointer; padding: 0;
+    display: flex; align-items: center; gap: 6px;
+    color: var(--on-surface-muted); font-size: 13px; font-weight: 600;
+    font-family: var(--font-body); margin-bottom: 18px;
+  }
+
+  .av2-divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 0; color: var(--on-surface-faint); font-size: 12px; font-weight: 600;
+  }
+  .av2-divider::before, .av2-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  .av2-google-btn {
+    width: 100%; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    border: 1.5px solid var(--line); border-radius: 14px; padding: 13px;
+    background: var(--surface); color: var(--on-surface);
+    font-family: var(--font-body); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s, transform 0.15s;
+  }
+  .av2-google-btn:hover { background: var(--surface-alt); }
+  .av2-google-btn:active { transform: scale(0.98); }
+  .av2-google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
   .boot-screen { min-height: 100svh; display: flex; align-items: center; justify-content: center; font-family: var(--font-heading); font-weight: 800; }
 
   /* ── ACCOUNT POPOVER ── */
@@ -565,7 +592,7 @@ const CSS = `
 
   .home-v2, .profile-v2, .orders-v2 {
     background: var(--surface); min-height: 100svh;
-    margin-top: calc(-1 * var(--nav-h));
+    margin-top: calc(-1 * (var(--nav-h) + var(--sat)));
   }
   .home-v2 { padding-bottom: 90px; }
   .profile-v2 { padding-bottom: 100px; }

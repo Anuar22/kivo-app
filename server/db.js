@@ -1,5 +1,8 @@
 const { Pool } = require("pg");
 
+// Cloud Postgres providers (Render, Neon, Supabase, etc.) require SSL.
+// Local dev (DATABASE_URL pointing at localhost) doesn't need it, so we
+// only enable it when NOT connecting to localhost, or when explicitly forced.
 const isLocal = /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "");
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -164,6 +167,7 @@ async function migrate() {
     "alter table users   add column if not exists address   text",
     "alter table users   add column if not exists email_verified boolean not null default false",
     "alter table users   add column if not exists is_banned boolean not null default false",
+    "alter table users   add column if not exists google_id text unique",
     "alter table vendors add column if not exists latitude  numeric(10,7)",
     "alter table vendors add column if not exists longitude numeric(10,7)",
     "alter table vendors add column if not exists address   text",
@@ -172,11 +176,6 @@ async function migrate() {
     "alter table menu_items add column if not exists image_url text",
     "alter table menu_items add column if not exists prep_time_minutes int",
     "alter table reviews add column if not exists id serial",  // no-op if exists
-    "alter table orders  add column if not exists delivery_lat numeric(10,7)",
-    "alter table orders  add column if not exists delivery_lng numeric(10,7)",
-    "alter table orders  add column if not exists clickpesa_payment_id text",
-    "alter table orders  add column if not exists payment_status text not null default 'pending'",
-    "alter table orders  add column if not exists payment_confirmed_at timestamptz",
     // Backfill: vendors that existed before this column was added shouldn't
     // suddenly vanish from the customer-facing list just because the column
     // defaults to false for everyone.
