@@ -102,96 +102,77 @@ function ReviewForm({ orderId, onDone }) {
         style={{ width: "100%", marginTop: 12, padding: "10px 12px", borderRadius: 10, border: "1.5px solid #e8e4df", fontSize: 14, fontFamily: "DM Sans, sans-serif", resize: "none", outline: "none", boxSizing: "border-box" }}
       />
       {error && <p style={{ color: "#ef4444", fontSize: 12, marginTop: 6 }}>{error}</p>}
-      <button
-        onClick={submit}
-        disabled={saving}
-        style={{ marginTop: 10, background: "#e53935", border: "none", borderRadius: 10, padding: "10px 20px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}
-      >
+      <button onClick={submit} disabled={saving} style={{ marginTop: 10, background: "#e53935", border: "none", borderRadius: 10, padding: "10px 20px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif" }}>
         {saving ? "Submitting…" : "Submit Review"}
       </button>
     </div>
   );
 }
 
-export default function VendorPage({ vendor, deliveredOrderId }) {
-  const { addItem, getQty, removeItem } = useCart();
-  const [tab, setTab]           = useState("menu");
-  const [menu, setMenu]         = useState(vendor?.menu || []);
-  const [menuLoading, setMenuLoading] = useState(!vendor?.menu);
-  const [reviews, setReviews]   = useState([]);
-  const [revTotal, setRevTotal] = useState(0);
+export default function VendorPage({ vendor, navigate }) {
+  const [menu, setMenu] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [tab, setTab] = useState("menu");
+  const [menuLoading, setMenuLoading] = useState(true);
   const [revLoading, setRevLoading] = useState(false);
+  const [reviewCount, setReviewCount] = useState(vendor.review_count || 0);
+  const [deliveredOrderId, setDeliveredOrderId] = useState(null);
   const [reviewed, setReviewed] = useState(false);
 
+  const { addItem, getQty, removeItem } = useCart();
+
   useEffect(() => {
-    if (!vendor) return;
-    vendorsApi.get(vendor.id)
-      .then(({ menu }) => setMenu(menu))
-      .catch(() => {})
+    setMenuLoading(true);
+    vendorsApi.menu(vendor.id)
+      .then(({ items }) => setMenu(items))
+      .catch(console.error)
       .finally(() => setMenuLoading(false));
-  }, [vendor?.id]);
+
+    vendorsApi.lastDeliveredOrder(vendor.id)
+      .then(({ order_id, has_reviewed }) => {
+        setDeliveredOrderId(order_id);
+        setReviewed(has_reviewed);
+      })
+      .catch(() => {});
+  }, [vendor.id]);
 
   const loadReviews = () => {
-    if (!vendor) return;
     setRevLoading(true);
-    apiRequest(`/api/vendors/${vendor.id}/reviews`)
-      .then(({ reviews: list, total }) => { setReviews(list); setRevTotal(total); })
-      .catch(() => {})
+    vendorsApi.reviews(vendor.id)
+      .then(({ reviews: data, count }) => {
+        setReviews(data);
+        if (count !== undefined) setReviewCount(count);
+      })
+      .catch(console.error)
       .finally(() => setRevLoading(false));
   };
 
   useEffect(() => {
     if (tab === "reviews") loadReviews();
-  }, [tab, vendor?.id]);
-
-  if (!vendor) return null;
-
-  const popular      = menu.filter(i => i.popular || Number(i.order_count) >= 5);
-  const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#e53935";
-  const deliveryFee  = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
-  const deliveryTime = vendor.delivery_time ?? vendor.deliveryTime ?? "20–35 min";
-  const reviewCount  = vendor.review_count ?? vendor.reviews ?? 0;
+  }, [tab]);
 
   return (
-    <div className="page vendor-page">
-      <div className="vendor-hero">
-        <div className="vendor-hero-art">{vendor.image}</div>
-        <div className="vendor-hero-overlay">
-          <span className="vendor-hero-tag" style={{ background: tagColor }}>{vendor.tag}</span>
+    <div className="vendor-page">
+      <div className="vendor-page-header" style={{ backgroundImage: vendor.cover_image_url ? `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.6)), url(${vendor.cover_image_url})` : "none" }}>
+        <button className="back-btn" onClick={() => navigate("home")}>←</button>
+        <div className="header-details">
           <h2>{vendor.name}</h2>
-          <p>{vendor.description}</p>
-          <div className="vendor-hero-meta">
-            <span>⭐ {vendor.rating} ({reviewCount})</span>
-            <span>⏱ {deliveryTime}</span>
-            <span>🛵 {fmt(deliveryFee)} delivery</span>
-          </div>
+          <p>{vendor.category}</p>
         </div>
       </div>
 
       <div className="vendor-tabs">
-        {["menu", "reviews"].map(t => (
-          <button key={t} className={`vtab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t === "reviews" ? `Reviews${revTotal > 0 ? ` (${revTotal})` : ""}` : "Menu"}
-          </button>
-        ))}
+        <button className={tab === "menu" ? "active" : ""} onClick={() => setTab("menu")}>Menu</button>
+        <button className={tab === "reviews" ? "active" : ""} onClick={() => setTab("reviews")}>Reviews ({reviewCount})</button>
       </div>
 
       {tab === "menu" && (
         <div className="menu-content">
           {menuLoading ? (
-            <div className="empty-state"><p>Loading menu...</p></div>
+            <p>Loading menu...</p>
           ) : (
             <>
-              {popular.length > 0 && (
-                <div className="menu-section">
-                  <h3 className="menu-section-title">⭐ Popular Items</h3>
-                  {popular.map(item => (
-                    <MenuItem key={item.id} item={item} vendor={vendor} addItem={addItem} getQty={getQty} removeItem={removeItem} />
-                  ))}
-                </div>
-              )}
-              <div className="menu-section">
-                <h3 className="menu-section-title">📋 Full Menu</h3>
+              <div className="menu-list">
                 {menu.map(item => (
                   <MenuItem key={item.id} item={item} vendor={vendor} addItem={addItem} getQty={getQty} removeItem={removeItem} />
                 ))}
@@ -211,12 +192,8 @@ export default function VendorPage({ vendor, deliveredOrderId }) {
             </div>
           </div>
 
-          {/* Show review form if customer just got a delivery from this vendor */}
           {deliveredOrderId && !reviewed && (
-            <ReviewForm
-              orderId={deliveredOrderId}
-              onDone={() => { setReviewed(true); loadReviews(); }}
-            />
+            <ReviewForm orderId={deliveredOrderId} onDone={() => { setReviewed(true); loadReviews(); }} />
           )}
 
           {revLoading ? (

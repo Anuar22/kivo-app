@@ -16,13 +16,12 @@ function timeAgo(ts) {
 const STATUS_STYLE = {
   Pending:   { bg: "#fff8e1", color: "#b8860b" },
   Accepted:  { bg: "#e8f5e9", color: "#2e7d32" },
-  Preparing:   { bg: "#fff3e0", color: "#e65100" },
+  Preparing: { bg: "#fff3e0", color: "#e65100" },
   Ready:     { bg: "#e3f2fd", color: "#1565c0" },
   Delivered: { bg: "#e8f5e9", color: "#2e7d32" },
   Cancelled: { bg: "#fdecea", color: "#c62828" },
 };
 
-// ── Inline star rating picker ─────────────────────────────────────────────
 function StarPicker({ value, onChange }) {
   return (
     <div style={{ display: "flex", gap: 4 }}>
@@ -37,7 +36,6 @@ function StarPicker({ value, onChange }) {
   );
 }
 
-// ── Review form shown inline on delivered orders ───────────────────────────
 function ReviewBox({ orderId, onDone }) {
   const [rating, setRating]   = useState(0);
   const [comment, setComment] = useState("");
@@ -78,10 +76,9 @@ function ReviewBox({ orderId, onDone }) {
   );
 }
 
-// ── Status progress tracker ─────────────────────────────────────────────────
 function StatusTracker({ status }) {
   const idx = STATUSES.indexOf(status);
-  const steps = STATUSES.slice(0, -1); // exclude "Delivered" as final dot is implicit
+  const steps = STATUSES.slice(0, -1);
   return (
     <div className="ov2-tracker">
       {steps.map((s, i) => (
@@ -97,7 +94,6 @@ function StatusTracker({ status }) {
   );
 }
 
-// ── Order card ───────────────────────────────────────────────────────────────
 function OrderCard({ order, onUpdate, reviewedIds, onReviewed }) {
   const isLive     = !["Delivered", "Cancelled"].includes(order.status);
   const isDelivered = order.status === "Delivered";
@@ -115,103 +111,79 @@ function OrderCard({ order, onUpdate, reviewedIds, onReviewed }) {
   return (
     <div className="ov2-card">
       {isLive && <div className="ov2-live-badge">🔴 Live tracking</div>}
-
       <div className="ov2-card-header" onClick={() => setExpanded(e => !e)}>
         <div className="ov2-card-emoji">🍽️</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p className="ov2-card-vendor">{order.vendor_name}</p>
           <p className="ov2-card-meta">{order.ref} · {timeAgo(order.created_at)}</p>
         </div>
-        <span className="ov2-status-pill" style={{ background: style.bg, color: style.color }}>
-          {STATUS_ICONS[order.status] || "📋"} {order.status}
+        <span className="ov2-card-status" style={{ background: style.bg, color: style.color }}>
+          {order.status}
         </span>
       </div>
 
-      {isLive && <StatusTracker status={order.status} />}
-
       {expanded && (
-        <div className="ov2-items">
-          {order.items?.map((item, i) => (
-            <div key={i} className="ov2-item-row">
-              <span><span className="ov2-item-qty">{item.qty}×</span> {item.name}</span>
-              <span>{fmt(Number(item.price) * item.qty)}</span>
-            </div>
-          ))}
+        <div className="ov2-card-body">
+          {isLive && <StatusTracker status={order.status} />}
+          <div className="ov2-items">
+            {order.items?.map((it, idx) => (
+              <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#362f2d", margin: "4px 0" }}>
+                <span>{it.quantity}x {it.name}</span>
+                <span>{fmt(it.price * it.quantity)}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop: "1px dashed #e8e4df", paddingTop: 8, marginTop: 8, display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 14 }}>
+            <span>Total Amount</span>
+            <span>{fmt(order.total_price)}</span>
+          </div>
+          {isDelivered && !alreadyReviewed && (
+            <ReviewBox orderId={order.id} onDone={() => { onReviewed(order.id); setShowSuccess(true); }} />
+          )}
         </div>
-      )}
-
-      <div className="ov2-card-footer">
-        <button className="ov2-expand-btn" onClick={() => setExpanded(e => !e)}>
-          {expanded ? "Hide items" : "View items"}
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </button>
-        <div className="ov2-total">
-          <span>Total</span>
-          <span className="ov2-total-amount">{fmt(order.total)}</span>
-        </div>
-      </div>
-
-      {/* Review CTA for delivered orders */}
-      {isDelivered && !alreadyReviewed && (
-        <ReviewBox orderId={order.id} onDone={() => { onReviewed(order.id); setShowSuccess(true); }} />
-      )}
-      {isDelivered && alreadyReviewed && (
-        <p className="ov2-reviewed-note">✓ You reviewed this order</p>
       )}
 
       {showSuccess && (
-        <SuccessModal
-          title="Thanks!"
-          message="Your review has been submitted and helps other customers."
-          buttonLabel="Done"
-          onClose={() => setShowSuccess(false)}
-        />
+        <SuccessModal title="Review Posted! 🎉" message="Thank you for your feedback." buttonLabel="Close" onClose={() => setShowSuccess(false)} />
       )}
     </div>
   );
 }
 
 export default function Orders() {
-  const [orders, setOrders]   = useState([]);
-  const [tab, setTab]         = useState("active");
+  const [orders, setOrders] = useState([]);
+  const [tab, setTab] = useState("active");
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
-  const [reviewedIds, setReviewedIds] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("kivo_reviewed") || "[]")); }
-    catch { return new Set(); }
-  });
+  const [error, setError] = useState("");
+  const [reviewedIds, setReviewedIds] = useState(new Set());
 
-  const load = useCallback(async () => {
-    try {
-      const { orders: list } = await ordersApi.myOrders();
-      setOrders(list);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    ordersApi.list()
+      .then(({ orders: data, reviewed_order_ids }) => {
+        setOrders(data);
+        setReviewedIds(new Set(reviewed_order_ids || []));
+      })
+      .catch(err => setError(err.message || "Failed to load orders"))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleUpdate = useCallback((updated) => {
-    setOrders(prev => prev.map(o => o.id === updated.id ? updated : o));
+    setOrders(prev => prev.map(o => o.id === updated.id ? { ...o, status: updated.status } : o));
   }, []);
 
-  const markReviewed = (id) => {
+  const handleReviewed = (id) => {
     setReviewedIds(prev => {
       const next = new Set(prev);
       next.add(id);
-      localStorage.setItem("kivo_reviewed", JSON.stringify([...next]));
       return next;
     });
   };
 
-  const active  = orders.filter(o => !["Delivered", "Cancelled"].includes(o.status));
-  const history = orders.filter(o =>  ["Delivered", "Cancelled"].includes(o.status));
-  const list    = tab === "active" ? active : history;
+  const active = orders.filter(o => !["Delivered", "Cancelled"].includes(o.status));
+  const history = orders.filter(o => ["Delivered", "Cancelled"].includes(o.status));
+  const list = tab === "active" ? active : history;
 
   return (
     <div className="orders-v2">
@@ -228,12 +200,8 @@ export default function Orders() {
       </div>
 
       <div className="ov2-list">
-        {loading && (
-          <div className="ov2-empty"><div className="ov2-empty-emoji">⏳</div><p>Loading your orders…</p></div>
-        )}
-        {error && !loading && (
-          <div className="ov2-empty"><div className="ov2-empty-emoji">⚠️</div><p>{error}</p></div>
-        )}
+        {loading && <div className="ov2-empty"><div className="ov2-empty-emoji">⏳</div><p>Loading your orders…</p></div>}
+        {error && !loading && <div className="ov2-empty"><div className="ov2-empty-emoji">⚠️</div><p>{error}</p></div>}
         {!loading && !error && list.length === 0 && (
           <div className="ov2-empty">
             <div className="ov2-empty-emoji">{tab === "active" ? "📭" : "🧾"}</div>
@@ -242,10 +210,9 @@ export default function Orders() {
           </div>
         )}
         {!loading && !error && list.map(o => (
-          <OrderCard key={o.id} order={o} onUpdate={handleUpdate} reviewedIds={reviewedIds} onReviewed={markReviewed} />
+          <OrderCard key={o.id} order={o} onUpdate={handleUpdate} reviewedIds={reviewedIds} onReviewed={handleReviewed} />
         ))}
       </div>
-      <div style={{ height: 20 }} />
     </div>
   );
 }
