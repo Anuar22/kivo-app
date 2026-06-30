@@ -508,19 +508,26 @@ export default function AuthScreen() {
 
   // ── Landing — choose login or register ──────────────────────────────────────
   return (
-    <div className="auth-v2">
+    <div className="auth-v2" style={{ backgroundColor: "#dc2626", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <div className="av2-header" style={{ padding: "72px 0 36px" }}>
-        <div className="av2-logo" style={{ fontSize: 44 }}>Kivo</div>
-        <p className="av2-tagline">Order food from your favourite local restaurants — fast delivery, wherever you are.</p>
+        {/* Logo container using your specific icon path */}
+        <div className="av2-logo" style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+          <img src="/icons/red-screen.png" alt="Kivo Logo" style={{ height: 50, width: "auto" }} />
+        </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto" }}>
-        <button className="av2-submit" onClick={() => goTo("register")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", paddingBottom: 24 }}>
+        <button 
+          className="av2-submit" 
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600" }} 
+          onClick={() => goTo("register")}
+        >
           Create an account
         </button>
+        
         <button
           className="av2-google-btn"
-          style={{ background: "var(--surface)" }}
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600" }}
           onClick={() => goTo("login")}
         >
           I already have an account
