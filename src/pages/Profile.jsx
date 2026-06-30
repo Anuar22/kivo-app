@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx"; // 1. Re-imported the theme context
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 import { fmt } from "../utils/currency.js";
@@ -31,13 +32,12 @@ function Field({ label, value, onChange, type = "text", placeholder, disabled })
   );
 }
 
-function ListRow({ icon, label, onClick, badge }) {
+function ListRow({ icon, label, onClick, badge, rightElement }) {
   return (
-    <button 
-      type="button" onClick={onClick}
+    <div 
       style={{
         width: "100%", display: "flex", alignItems: "center", background: "none",
-        border: "none", padding: "14px 0", cursor: "pointer", borderBottom: "1px solid #fcfbfa"
+        border: "none", padding: "14px 0", borderBottom: "1px solid #fcfbfa"
       }}
     >
       <span style={{ marginRight: 12, fontSize: 16 }}>{icon}</span>
@@ -47,15 +47,21 @@ function ListRow({ icon, label, onClick, badge }) {
           {badge}
         </span>
       )}
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7a7065" strokeWidth="2.5">
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
+      {rightElement ? rightElement : (
+        <button type="button" onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7a7065" strokeWidth="2.5">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      )}
+    </div>
   );
 }
 
 export default function Profile({ navigate }) {
   const { user, logout, updateUser } = useAccount();
+  const { darkMode, toggleTheme } = useTheme(); // 2. Initialized theme variables
+  
   const [form, setForm] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -98,7 +104,6 @@ export default function Profile({ navigate }) {
     }
   };
 
-  // ── POPUP SAVE SUBMISSION HANDLER ──
   const savePaymentSettings = async (e) => {
     e.preventDefault();
     setUpdatingPayment(true);
@@ -183,7 +188,20 @@ export default function Profile({ navigate }) {
 
           <div style={{ height: 1, background: "#f5f3f0", margin: "12px 0" }} />
 
-          {/* Connected Trigger to Open Popup Form */}
+          {/* 3. Added the Theme Toggle Interface Right Here */}
+          <ListRow 
+            icon={darkMode ? "🌙" : "☀️"} 
+            label="Dark Mode" 
+            rightElement={
+              <input 
+                type="checkbox" 
+                checked={darkMode} 
+                onChange={toggleTheme}
+                style={{ width: 18, height: 18, accentColor: "#e53935", cursor: "pointer" }}
+              />
+            }
+          />
+
           <ListRow 
             icon="💳" 
             label="Payment Details" 
