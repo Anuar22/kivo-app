@@ -34,7 +34,6 @@ export default function Profile({ navigate }) {
     setLoading(true);
     setMessage({ text: "", type: "" });
     try {
-      // Push changes directly to Render backend
       const res = await usersApi.updateProfile({ name, phone, email });
       updateUserLocal(res.user);
       setEditing(false);
@@ -67,7 +66,7 @@ export default function Profile({ navigate }) {
   const simulatedLinkCard = () => {
     setLoadingPayment(true);
     setMessage({ text: "", type: "" });
-    // Simulate linking securely via Stripe flow tokenization
+    
     setTimeout(async () => {
       try {
         const res = await usersApi.updatePaymentSettings({ hasSavedCard: true });
@@ -85,7 +84,7 @@ export default function Profile({ navigate }) {
   return (
     <div className="profile-container" style={{ fontFamily: "DM Sans, sans-serif", background: "#fafaf9", minHeight: "100vh", paddingBottom: 100 }}>
       
-      {/* Red Header Top Part - Made Well Visible */}
+      {/* Red Header Top Part - Fully Visible & Fixed Styles */}
       <div style={{ background: "#e53935", padding: "40px 24px 30px", borderBottomLeftRadius: 24, borderBottomRightRadius: 24, color: "white", boxShadow: "0 4px 15px rgba(229, 57, 53, 0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, border: "2px solid white" }}>
@@ -107,10 +106,10 @@ export default function Profile({ navigate }) {
 
         {/* Account Details Block */}
         <div style={{ background: "white", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 20, border: "1px solid #e8e4df" }}>
-          <div style={{ display: "flex", justifyContent: "between", alignItems: "center", marginBottom: 16, width: "100%" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, width: "100%" }}>
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#0f0f0f" }}>Personal Information</h3>
             {!editing && (
-              <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#e53935", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans" }}>Edit</button>
+              <button type="button" onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#e53935", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans" }}>Edit</button>
             )}
           </div>
 
@@ -153,7 +152,7 @@ export default function Profile({ navigate }) {
           )}
         </div>
 
-        {/* Payment Details Section - Active Mode */}
+        {/* Payment Details Section */}
         <div style={{ background: "white", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", border: "1px solid #e8e4df" }}>
           <h3 style={{ margin: "0 0 4px 0", fontSize: 15, fontWeight: 700, color: "#0f0f0f" }}>Payment Setup</h3>
           <p style={{ margin: "0 0 16px 0", fontSize: 12, color: "#7a7065" }}>Speed up checkouts by configuring your default platforms here.</p>
@@ -173,6 +172,7 @@ export default function Profile({ navigate }) {
                 style={{ flex: 1, padding: "10px 12px", fontSize: 13, borderRadius: 10, border: "1.5px solid #e8e4df", fontFamily: "DM Sans" }}
               />
               <button 
+                type="button"
                 onClick={saveMobileMoneyDetails} 
                 disabled={loadingPayment}
                 style={{ background: "#0f0f0f", color: "white", border: "none", borderRadius: 10, padding: "0 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
@@ -182,7 +182,7 @@ export default function Profile({ navigate }) {
             </div>
           </div>
 
-          {/* Card Management Link Block via secure token logic */}
+          {/* Card Management Link Block */}
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -193,6 +193,7 @@ export default function Profile({ navigate }) {
                 </div>
               </div>
               <button 
+                type="button"
                 onClick={simulatedLinkCard}
                 disabled={loadingPayment || cardStatus === "Linked"}
                 style={{ background: cardStatus === "Linked" ? "#f7f5f2" : "#e53935", color: cardStatus === "Linked" ? "#b0a89f" : "white", border: "none", padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600, cursor: cardStatus === "Linked" ? "not-allowed" : "pointer", fontFamily: "DM Sans" }}
