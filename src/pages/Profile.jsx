@@ -241,7 +241,7 @@ export default function Profile({ navigate }) {
   };
 
   return (
-    <div style={{ background: "#fafaf9", minHeight: "100vh", paddingBottom: 40, fontFamily: "DM Sans, sans-serif" }}>
+    <div style={{ background: "#fafaf9", minHeight: "100vh", paddingBottom: 40, margin: 0, fontFamily: "DM Sans, sans-serif" }}>
       
       {/* ── Top Header Banner with Dynamic Gradient (As seen in Screenshot 2026-06-30 103955.png) ── */}
       <div style={{ 
