@@ -3,7 +3,6 @@ import { useCart } from "../context/CartContext.jsx";
 import { ordersApi, paymentsApi } from "../api/index.js";
 import { useAccount } from "../context/AccountContext.jsx";
 import SuccessModal from "../components/SuccessModal.jsx";
-import { theme } from "../styles/theme.js";
 
 const MAPBOX_TOKEN    = import.meta.env.VITE_MAPBOX_TOKEN;
 const PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -56,7 +55,7 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
       mapboxgl.accessToken = MAPBOX_TOKEN;
       const map = new mapboxgl.Map({ container: containerRef.current, style: "mapbox://styles/mapbox/streets-v12", center: [36.817, -1.286], zoom: 13 });
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
-      const marker = new mapboxgl.Marker({ color: theme.colors.brand, draggable: true }).setLngLat([36.817, -1.286]).addTo(map);
+      const marker = new mapboxgl.Marker({ color: "#e53935", draggable: true }).setLngLat([36.817, -1.286]).addTo(map);
 
       const revGeocode = async (lng, lat) => {
         try {
@@ -116,8 +115,8 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
     <div>
       <input className="pv2-input" placeholder="Enter delivery address…" value={query} onChange={e => setQuery(e.target.value)} style={{ marginBottom: 12 }} autoFocus />
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => onConfirm({ address: query, lat: null, lng: null })} style={{ flex: 1, background: theme.colors.brand, border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Use this address</button>
-        <button onClick={onCancel} style={{ background: "none", border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: "13px 16px", fontSize: 13, color: theme.colors.textMuted, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>Cancel</button>
+        <button onClick={() => onConfirm({ address: query, lat: null, lng: null })} style={{ flex: 1, background: "#e53935", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Use this address</button>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>Cancel</button>
       </div>
     </div>
   );
@@ -128,9 +127,9 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
         <input className="pv2-input" placeholder="Search your delivery address…" value={query} onChange={e => search(e.target.value)} style={{ paddingRight: 36 }} autoFocus />
         {searching && <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>⏳</span>}
         {results.length > 0 && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "white", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 10, overflow: "hidden", border: `1px solid ${theme.colors.border}` }}>
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "white", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 10, overflow: "hidden", border: "1px solid #e8e4df" }}>
             {results.map(f => (
-              <button key={f.id} onClick={() => selectResult(f)} style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "11px 14px", fontSize: 13, color: theme.colors.textMain, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", borderBottom: `1px solid ${theme.colors.border}`, display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <button key={f.id} onClick={() => selectResult(f)} style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "11px 14px", fontSize: 13, color: "#0f0f0f", cursor: "pointer", fontFamily: "DM Sans,sans-serif", borderBottom: "1px solid #f0ede9", display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
                 <span style={{ lineHeight: 1.4 }}>{f.place_name}</span>
               </button>
@@ -139,22 +138,22 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
         )}
       </div>
       <div style={{ position: "relative" }}>
-        <div ref={containerRef} style={{ height: 220, borderRadius: 14, overflow: "hidden", border: `1.5px solid ${theme.colors.border}` }} />
-        {!mapReady && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: theme.colors.bgField, borderRadius: 14, fontSize: 13, color: theme.colors.textMuted }}>Loading map…</div>}
+        <div ref={containerRef} style={{ height: 220, borderRadius: 14, overflow: "hidden", border: "1.5px solid #e8e4df" }} />
+        {!mapReady && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f7f5f2", borderRadius: 14, fontSize: 13, color: "#b0a89f" }}>Loading map…</div>}
       </div>
-      <p style={{ fontSize: 12, color: theme.colors.textMuted, margin: 0 }}>🗺️ Tap the map or drag the pin to fine-tune your location</p>
+      <p style={{ fontSize: 12, color: "#7a7065", margin: 0 }}>🗺️ Tap the map or drag the pin to fine-tune your location</p>
       {addrLine && (
-        <div style={{ background: theme.colors.bgField, borderRadius: 10, padding: "10px 14px", fontSize: 13, color: theme.colors.textMain, display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ background: "#f7f5f2", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#0f0f0f", display: "flex", gap: 8, alignItems: "flex-start" }}>
           <span style={{ flexShrink: 0 }}>📍</span>
           <span style={{ lineHeight: 1.5 }}>{addrLine}</span>
         </div>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <button onClick={() => coords && addrLine && onConfirm({ address: addrLine, lat: coords.lat, lng: coords.lng })} disabled={!coords || !addrLine.trim()}
-          style={{ flex: 1, background: (!coords || !addrLine.trim()) ? theme.colors.border : theme.colors.brand, border: "none", borderRadius: 12, padding: 13, color: (!coords || !addrLine.trim()) ? theme.colors.textMuted : "white", fontWeight: 700, fontSize: 14, cursor: (!coords || !addrLine.trim()) ? "not-allowed" : "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+          style={{ flex: 1, background: (!coords || !addrLine.trim()) ? "#e8e4df" : "#e53935", border: "none", borderRadius: 12, padding: 13, color: (!coords || !addrLine.trim()) ? "#b0a89f" : "white", fontWeight: 700, fontSize: 14, cursor: (!coords || !addrLine.trim()) ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
           Confirm Location
         </button>
-        <button onClick={onCancel} style={{ background: "none", border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: "13px 16px", fontSize: 13, color: theme.colors.textMuted, fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Cancel</button>
       </div>
     </div>
   );
@@ -169,7 +168,7 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
     loadStripeJs().then(Stripe => {
       if (!mounted || !cardRef.current) return;
       const stripe = Stripe(PUBLISHABLE_KEY); const elements = stripe.elements();
-      const card = elements.create("card", { style: { base: { fontSize: "15px", fontFamily: "'DM Sans', sans-serif", color: theme.colors.textMain, "::placeholder": { color: theme.colors.textMuted } }, invalid: { color: theme.colors.brand } }, hidePostalCode: true });
+      const card = elements.create("card", { style: { base: { fontSize: "15px", fontFamily: "'DM Sans', sans-serif", color: "#0f0f0f", "::placeholder": { color: "#b0a89f" } }, invalid: { color: "#ef4444" } }, hidePostalCode: true });
       card.mount(cardRef.current);
       card.on("ready", () => { if (mounted) setReady(true); });
       card.on("change", e => { if (mounted) setError(e.error?.message || ""); });
@@ -189,14 +188,14 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
   };
   return (
     <div style={{ marginTop: 8 }}>
-      <div ref={cardRef} style={{ border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: 14, background: theme.colors.bgField, minHeight: 46 }} />
-      {!ready && !error && <p style={{ fontSize: 12, color: theme.colors.textMuted, marginTop: 6 }}>Loading card form…</p>}
-      {error && <p style={{ fontSize: 12, color: theme.colors.brand, marginTop: 6 }}>{error}</p>}
+      <div ref={cardRef} style={{ border: "1.5px solid #e8e4df", borderRadius: 12, padding: 14, background: "#fafaf9", minHeight: 46 }} />
+      {!ready && !error && <p style={{ fontSize: 12, color: "#b0a89f", marginTop: 6 }}>Loading card form…</p>}
+      {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{error}</p>}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <button onClick={pay} disabled={paying || !ready} style={{ flex: 1, background: paying ? theme.colors.textMuted : theme.colors.textMain, border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", cursor: paying ? "not-allowed" : "pointer" }}>
+        <button onClick={pay} disabled={paying || !ready} style={{ flex: 1, background: paying ? "#b0a89f" : "#0f0f0f", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", cursor: paying ? "not-allowed" : "pointer" }}>
           {paying ? "Processing…" : `Pay ${Math.round(amount).toLocaleString()} TSh`}
         </button>
-        <button onClick={onCancel} disabled={paying} style={{ background: "none", border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: "13px 16px", fontSize: 13, color: theme.colors.textMuted, fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
+        <button onClick={onCancel} disabled={paying} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
       </div>
     </div>
   );
@@ -249,15 +248,15 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
     <div style={{ textAlign: "center", padding: "20px 0" }}>
       <div style={{ fontSize: 48, marginBottom: 12 }}>{status === "done" ? "✅" : "📱"}</div>
       <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{status === "done" ? "Payment confirmed!" : "Waiting for payment…"}</p>
-      <p style={{ fontSize: 13, color: theme.colors.textMuted, lineHeight: 1.6, marginBottom: 16 }}>{message}</p>
+      <p style={{ fontSize: 13, color: "#7a7065", lineHeight: 1.6, marginBottom: 16 }}>{message}</p>
       {status === "waiting" && (
         <>
           <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 }}>
             {[0,1,2].map(i => (
-              <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: theme.colors.brand, animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
             ))}
           </div>
-          <button onClick={onCancel} style={{ background: "none", border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: "10px 20px", fontSize: 13, color: theme.colors.textMuted, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+          <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "10px 20px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
             Cancel
           </button>
         </>
@@ -267,11 +266,11 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
 
   return (
     <div style={{ marginTop: 8 }}>
-      <p style={{ fontSize: 13, color: theme.colors.textMuted, marginBottom: 12, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 13, color: "#7a7065", marginBottom: 12, lineHeight: 1.6 }}>
         Enter your mobile money number (M-Pesa, Tigo, Airtel, Halo). You'll receive a prompt to enter your PIN.
       </p>
       <div style={{ position: "relative", marginBottom: 8 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: theme.colors.textMuted, pointerEvents: "none" }}>📱</span>
+        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#7a7065", pointerEvents: "none" }}>📱</span>
         <input
           className="form-input"
           type="tel"
@@ -281,20 +280,20 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
           style={{ paddingLeft: 36 }}
         />
       </div>
-      {error && <p style={{ fontSize: 12, color: theme.colors.brand, marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ fontSize: 12, color: "#ef4444", marginBottom: 8 }}>{error}</p>}
       {status === "failed" && (
-        <p style={{ fontSize: 12, color: theme.colors.brand, marginBottom: 8 }}>{error || "Payment failed. Try again."}</p>
+        <p style={{ fontSize: 12, color: "#ef4444", marginBottom: 8 }}>{error || "Payment failed. Try again."}</p>
       )}
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <button onClick={startPush} disabled={status === "pushing"}
-          style={{ flex: 1, background: status === "pushing" ? theme.colors.textMuted : theme.colors.brand, border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, cursor: status === "pushing" ? "not-allowed" : "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+          style={{ flex: 1, background: status === "pushing" ? "#b0a89f" : "#e53935", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, cursor: status === "pushing" ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
           {status === "pushing" ? "Sending…" : `Pay TZS ${Math.round(amount).toLocaleString()}`}
         </button>
-        <button onClick={onCancel} style={{ background: "none", border: `1.5px solid ${theme.colors.border}`, borderRadius: 12, padding: "13px 16px", fontSize: 13, color: theme.colors.textMuted, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
           Cancel
         </button>
       </div>
-      <p style={{ fontSize: 11, color: theme.colors.textMuted, marginTop: 10, textAlign: "center", lineHeight: 1.5 }}>
+      <p style={{ fontSize: 11, color: "#b0a89f", marginTop: 10, textAlign: "center", lineHeight: 1.5 }}>
         🔒 Powered by ClickPesa · Supports M-Pesa, Tigo, Airtel & Halopesa
       </p>
     </div>
@@ -324,6 +323,7 @@ export default function Cart({ navigate }) {
   const [loading,        setLoading]         = useState(false);
   const [error,          setError]           = useState("");
 
+  // VAT (Tax) has been completely removed. Delivery fee is conditionally active.
   const deliveryFee     = (fulfillment === "delivery" && items.length > 0) ? 2000 : 0; 
   const grandTotal      = total + deliveryFee;
   const stripeAvailable = !!PUBLISHABLE_KEY;
@@ -391,48 +391,46 @@ export default function Cart({ navigate }) {
   const closeSuccess = () => { clearCart(); navigate("orders"); };
 
   if (items.length === 0 && !placed) return (
-    <div style={theme.pwaContainer}>
-      <div className="empty-cart" style={{ textAlign: "center", padding: "60px 0" }}>
-        <span className="empty-cart-icon" style={{ fontSize: 48, display: "block", marginBottom: 16 }}>🛒</span>
-        <h3 style={{ color: theme.colors.textMain, fontSize: 18, marginBottom: 8 }}>Your cart is empty</h3>
-        <p style={{ color: theme.colors.textMuted, fontSize: 14, marginBottom: 24 }}>Add some delicious food to get started</p>
-        <button className="btn-primary" onClick={() => navigate("home")} style={{ width: "auto", padding: "14px 32px", background: theme.colors.brand, color: "white", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}>Browse Restaurants</button>
+    <div className="page cart-page">
+      <div className="empty-cart">
+        <span className="empty-cart-icon">🛒</span>
+        <h3>Your cart is empty</h3>
+        <p>Add some delicious food to get started</p>
+        <button className="btn-primary" onClick={() => navigate("home")} style={{ width: "auto", padding: "14px 32px" }}>Browse Restaurants</button>
       </div>
     </div>
   );
 
   return (
-    <div style={theme.pwaContainer}>
-      <div style={{ paddingBottom: 40 }}>
-        <div className="cart-vendor-label" style={{ display: "flex", alignItems: "center", gap: 4, background: theme.colors.bgField, padding: "12px 14px", borderRadius: 12, marginBottom: 20, color: theme.colors.textMain, fontSize: 14 }}>
-          <span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong>
-        </div>
+    <div className="cart-v2">
+      <div style={{ padding: "0 20px 200px" }}>
+        <div className="cart-vendor-label"><span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong></div>
 
         {/* Items */}
-        <div className="cart-items" style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+        <div className="cart-items">
           {items.map(item => (
-            <div key={item.id} className="cart-item" style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${theme.colors.border}`, paddingBottom: 12 }}>
-              <div className="cart-item-emoji" style={{ fontSize: 24 }}>{item.image}</div>
-              <div className="cart-item-info" style={{ flex: 1 }}>
-                <p className="cart-item-name" style={{ margin: 0, fontWeight: 600, color: theme.colors.textMain, fontSize: 14 }}>{item.name}</p>
-                <p className="cart-item-price" style={{ margin: "2px 0 0", color: theme.colors.brand, fontSize: 13, fontWeight: 700 }}>{(item.price * item.qty).toLocaleString()} TSh</p>
+            <div key={item.id} className="cart-item">
+              <div className="cart-item-emoji">{item.image}</div>
+              <div className="cart-item-info">
+                <p className="cart-item-name">{item.name}</p>
+                <p className="cart-item-price">{(item.price * item.qty).toLocaleString()} TSh</p>
               </div>
-              <div className="qty-control" style={{ display: "flex", alignItems: "center", gap: 10, background: theme.colors.bgField, borderRadius: 20, padding: "4px 10px" }}>
-                <button onClick={() => removeItem(item.id)} style={{ border: "none", background: "none", color: theme.colors.textMain, fontWeight: 700, cursor: "pointer", fontSize: 16 }}>−</button>
-                <span style={{ fontWeight: 600, fontSize: 13, minWidth: 16, textAlign: "center" }}>{item.qty}</span>
-                <button onClick={() => addItem(item, { id: vendorId, name: vendorName })} style={{ border: "none", background: "none", color: theme.colors.textMain, fontWeight: 700, cursor: "pointer", fontSize: 16 }}>+</button>
+              <div className="qty-control">
+                <button onClick={() => removeItem(item.id)}>−</button>
+                <span>{item.qty}</span>
+                <button onClick={() => addItem(item, { id: vendorId, name: vendorName })}>+</button>
               </div>
             </div>
           ))}
         </div>
 
         {/* New Fulfillment Option Segment */}
-        <p className="cv2-section-title" style={{ fontWeight: 700, fontSize: 14, color: theme.colors.textMain, marginBottom: 10 }}>📦 Order Method</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 18, background: theme.colors.bgField, padding: 4, borderRadius: 12 }}>
-          <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", background: fulfillment === "delivery" ? "white" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "delivery" ? theme.colors.brand : theme.colors.textMuted, transition: "0.2s" }}>
+        <p className="cv2-section-title">📦 Order Method</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#f1eee9", padding: 4, borderRadius: 12 }}>
+          <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "delivery" ? "#white" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "delivery" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
             🛵 Delivery
           </button>
-          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", background: fulfillment === "pickup" ? "white" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "pickup" ? theme.colors.brand : theme.colors.textMuted, transition: "0.2s" }}>
+          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#white" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "pickup" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
             🛍️ Self Pick-Up
           </button>
         </div>
@@ -440,7 +438,7 @@ export default function Cart({ navigate }) {
         {/* Conditional Address Selection based on Option selection */}
         {fulfillment === "delivery" && (
           <>
-            <p className="cv2-section-title" style={{ fontWeight: 700, fontSize: 14, color: theme.colors.textMain, marginBottom: 10 }}>📍 Delivery Address</p>
+            <p className="cv2-section-title">📍 Delivery Address</p>
             {showPicker ? (
               <div style={{ marginBottom: 20 }}>
                 <AddressPicker
@@ -451,70 +449,68 @@ export default function Cart({ navigate }) {
               </div>
             ) : (
               <button onClick={() => setShowPicker(true)}
-                style={{ width: "100%", textAlign: "left", background: delivery.address ? theme.colors.bgField : "white", border: `1.5px solid ${delivery.address ? theme.colors.border : theme.colors.brand}`, borderRadius: 12, padding: "13px 14px", marginBottom: 20, fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: delivery.address ? theme.colors.textMain : theme.colors.textMuted, cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                style={{ width: "100%", textAlign: "left", background: delivery.address ? "#f7f5f2" : "#fff", border: `1.5px solid ${delivery.address ? "#e8e4df" : "#e53935"}`, borderRadius: 12, padding: "13px 14px", marginBottom: 20, fontFamily: "DM Sans,sans-serif", fontSize: 13, color: delivery.address ? "#0f0f0f" : "#b0a89f", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8 }}>
                 <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
                 <span style={{ lineHeight: 1.5, flex: 1 }}>{delivery.address || "Tap to set your delivery location on the map…"}</span>
-                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: theme.colors.brand, fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
+                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "#e53935", fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
               </button>
             )}
           </>
         )}
 
         {fulfillment === "pickup" && (
-          <div style={{ padding: "14px", background: theme.colors.bgField, borderRadius: 12, border: `1.5px dashed ${theme.colors.border}`, marginBottom: 20, fontSize: 13, color: theme.colors.textMuted, lineHeight: 1.5 }}>
-            Store pickup is selected. Collect your package directly from <strong>{vendorName}</strong>. We'll update your feed with status changes when your kitchen flags it ready.
+          <div style={{ padding: "14px", background: "#f7f5f2", borderRadius: 12, border: "1.5px dashed #e8e4df", marginBottom: 20, fontSize: 13, color: "#7a7065", lineHeight: 1.5 }}>
+            🏪 Collect your package directly from <strong>{vendorName}</strong>. We'll update your feed with status changes when your kitchen flags it ready.
           </div>
         )}
 
         {/* Summary */}
-        <p className="cv2-section-title" style={{ fontWeight: 700, fontSize: 14, color: theme.colors.textMain, marginBottom: 10 }}>Order summary</p>
-        <div className="cv2-summary" style={{ background: theme.colors.bgField, borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-          <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: theme.colors.textMuted }}><span>Subtotal</span><span style={{ color: theme.colors.textMain }}>{total.toLocaleString()} TSh</span></div>
+        <p className="cv2-section-title">Order summary</p>
+        <div className="cv2-summary">
+          <div className="cv2-summary-row"><span>Subtotal</span><span>{total.toLocaleString()} TSh</span></div>
           {fulfillment === "delivery" && (
-            <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: theme.colors.textMuted }}><span>Delivery fee</span><span style={{ color: theme.colors.textMain }}>{deliveryFee.toLocaleString()} TSh</span></div>
+            <div className="cv2-summary-row"><span>Delivery fee</span><span>{deliveryFee.toLocaleString()} TSh</span></div>
           )}
           {fulfillment === "pickup" && (
-            <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: theme.colors.textMuted }}><span>Delivery fee</span><span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span></div>
+            <div className="cv2-summary-row"><span>Delivery fee</span><span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span></div>
           )}
-          <div className="cv2-summary-divider" style={{ height: 1, background: theme.colors.border, margin: "4px 0" }} />
-          <div className="cv2-summary-row cv2-summary-total" style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 700, color: theme.colors.textMain }}><span>Total</span><span style={{ color: theme.colors.brand }}>{grandTotal.toLocaleString()} TSh</span></div>
+          <div className="cv2-summary-divider" />
+          <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>{grandTotal.toLocaleString()} TSh</span></div>
         </div>
 
         {/* Payment methods */}
-        <p className="cv2-section-title" style={{ fontWeight: 700, fontSize: 14, color: theme.colors.textMain, marginBottom: 10 }}>Payment methods</p>
-        <div className="cv2-pay-list" style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+        <p className="cv2-section-title">Payment methods</p>
+        <div className="cv2-pay-list">
           {PAY_METHODS.map(pm => (
-            <button key={pm.id} className={`cv2-pay-opt ${payMethod === pm.id ? "active" : ""}`} onClick={() => setPayMethod(pm.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, background: "white", border: `1.5px solid ${payMethod === pm.id ? theme.colors.brand : theme.colors.border}`, borderRadius: 14, padding: 14, textAlign: "left", cursor: "pointer", transition: "0.2s" }}>
-              <div className="cv2-pay-icon" style={{ fontSize: 20 }}>{pm.render ? pm.render() : pm.emoji}</div>
-              <div className="cv2-pay-text" style={{ flex: 1 }}>
-                <span className="cv2-pay-label" style={{ display: "block", fontWeight: 600, fontSize: 14, color: theme.colors.textMain }}>{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
-                <span className="cv2-pay-detail" style={{ display: "block", fontSize: 12, color: theme.colors.textMuted, marginTop: 1 }}>{pm.detail}</span>
+            <button key={pm.id} className={`cv2-pay-opt ${payMethod === pm.id ? "active" : ""}`} onClick={() => setPayMethod(pm.id)}>
+              <div className="cv2-pay-icon">{pm.render ? pm.render() : pm.emoji}</div>
+              <div className="cv2-pay-text">
+                <span className="cv2-pay-label">{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
+                <span className="cv2-pay-detail">{pm.detail}</span>
               </div>
-              <div className={`cv2-radio ${payMethod === pm.id ? "checked" : ""}`} style={{ width: 16, height: 16, borderRadius: "50%", border: `1.5px solid ${payMethod === pm.id ? theme.colors.brand : theme.colors.textMuted}`, display: "flex", alignItems: "center", justifyContent: "center", background: payMethod === pm.id ? theme.colors.brand : "transparent" }}>
-                {payMethod === pm.id && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }} />}
-              </div>
+              <div className={`cv2-radio ${payMethod === pm.id ? "checked" : ""}`} />
             </button>
           ))}
         </div>
 
         {/* Stripe form */}
         {payMethod === "card" && stripeAvailable && showCardForm && (
-          <div style={{ marginTop: 14, background: theme.colors.bgField, border: `1.5px solid ${theme.colors.border}`, borderRadius: 14, padding: "16px 14px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: theme.colors.textMain }}>Enter card details</p>
+          <div style={{ marginTop: 14, background: "#fafaf9", border: "1.5px solid #f0f0f0", borderRadius: 14, padding: "16px 14px" }}>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Enter card details</p>
             <StripeCardForm amount={grandTotal} onSuccess={handleStripeSuccess} onCancel={() => setShowCardForm(false)} />
           </div>
         )}
 
         {payMethod === "card" && !stripeAvailable && (
-          <div style={{ marginTop: 10, padding: "10px 14px", background: "#fff8f5", border: "1.5px solid #ffe8da", borderRadius: 10, fontSize: 12, color: theme.colors.textMuted, lineHeight: 1.6 }}>
-            💡 Card payments need <code style={{ background: theme.colors.border, borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> configured.
+          <div style={{ marginTop: 10, padding: "10px 14px", background: "#fff8f5", border: "1.5px solid #ffe8da", borderRadius: 10, fontSize: 12, color: "#7a7065", lineHeight: 1.6 }}>
+            💡 Card payments need <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> configured.
           </div>
         )}
 
         {/* ClickPesa mobile money form */}
         {payMethod === "mobile" && showMobileForm && pendingOrder && (
-          <div style={{ marginTop: 14, background: theme.colors.bgField, border: `1.5px solid ${theme.colors.border}`, borderRadius: 14, padding: "16px 14px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: theme.colors.textMain }}>Mobile Money Payment</p>
+          <div style={{ marginTop: 14, background: "#fafaf9", border: "1.5px solid #f0f0f0", borderRadius: 14, padding: "16px 14px" }}>
+            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Mobile Money Payment</p>
             <ClickPesaForm
               amount={grandTotal}
               orderId={pendingOrder.id}
@@ -533,14 +529,14 @@ export default function Cart({ navigate }) {
         )}
       </div>
 
-      {/* Bottom sticky bar layout */}
+      {/* Bottom bar */}
       {!showCardForm && !showMobileForm && !showPicker && (
-        <div className="cv2-bottom-bar" style={{ position: "fixed", bottom: "calc(var(--sab) + 68px)", left: 0, right: 0, background: "white", padding: "12px 16px", borderTop: `1px solid ${theme.colors.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 90 }}>
-          <div className="cv2-bottom-total" style={{ display: "flex", flexDirection: "column" }}>
-            <span className="cv2-bottom-total-label" style={{ fontSize: 11, color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Total amt</span>
-            <span className="cv2-bottom-total-amount" style={{ fontSize: 18, fontWeight: 800, color: theme.colors.brand }}>{grandTotal.toLocaleString()} TSh</span>
+        <div className="cv2-bottom-bar">
+          <div className="cv2-bottom-total">
+            <span className="cv2-bottom-total-label">Total amt</span>
+            <span className="cv2-bottom-total-amount">{grandTotal.toLocaleString()} TSh</span>
           </div>
-          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || (fulfillment === "delivery" && !delivery.address)} style={{ background: (loading || (fulfillment === "delivery" && !delivery.address)) ? theme.colors.textMuted : theme.colors.brand, color: "white", border: "none", borderRadius: 12, padding: "14px 28px", fontWeight: 700, fontSize: 14, cursor: (loading || (fulfillment === "delivery" && !delivery.address)) ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || (fulfillment === "delivery" && !delivery.address)}>
             {loading ? "Placing…" : "Pay Now"}
           </button>
         </div>
