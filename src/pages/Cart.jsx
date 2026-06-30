@@ -204,7 +204,7 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
 // ── ClickPesa mobile money form ───────────────────────────────────────────────
 function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, defaultPhone }) {
   const [phone,    setPhone]    = useState(defaultPhone || "");
-  const [status,   setStatus]   = useState("idle"); // idle | pushing | waiting | done | failed
+  const [status,   setStatus]   = useState("idle"); 
   const [message,  setMessage]  = useState("");
   const [error,    setError]    = useState("");
   const pollRef = useRef(null);
@@ -231,7 +231,7 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
             setError("Payment was not completed. Please try again.");
           }
         } catch { /* keep polling */ }
-        if (attempts >= 36) { // 3 minutes
+        if (attempts >= 36) { 
           clearInterval(pollRef.current);
           setStatus("failed");
           setError("Payment timed out. If money was deducted, contact support.");
@@ -302,9 +302,9 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
 
 // ── Pay methods ───────────────────────────────────────────────────────────────
 const PAY_METHODS = [
-  { id: "card",   label: "Card",            detail: "Visa or Mastercard",            render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa">VISA</span></div> },
   { id: "cash",   label: "Cash on Delivery",detail: "Pay when your order arrives",   emoji: "💵" },
   { id: "mobile", label: "Mobile Money",    detail: "M-Pesa · Tigo · Airtel · Halo", emoji: "📱" },
+  { id: "card",   label: "Card",            detail: "Visa or Mastercard",            render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa">VISA</span></div> },
 ];
 
 // ── Main Cart ─────────────────────────────────────────────────────────────────
@@ -312,6 +312,7 @@ export default function Cart({ navigate }) {
   const { items, addItem, removeItem, clearCart, total, vendorName, vendorId } = useCart();
   const { user } = useAccount();
 
+  const [fulfillment,    setFulfillment]    = useState("delivery"); // "delivery" | "pickup"
   const [delivery,       setDelivery]       = useState({ address: "", lat: null, lng: null });
   const [showPicker,     setShowPicker]      = useState(false);
   const [payMethod,      setPayMethod]       = useState("cash");
@@ -322,10 +323,9 @@ export default function Cart({ navigate }) {
   const [loading,        setLoading]         = useState(false);
   const [error,          setError]           = useState("");
 
-  // Adjusted constants to represent plain numeric TSh valuations
-  const deliveryFee     = items.length > 0 ? 2000 : 0; 
-  const taxes           = items.length > 0 ? Math.round(total * 0.05) : 0;
-  const grandTotal      = total + deliveryFee + taxes;
+  // VAT (Tax) has been completely removed. Delivery fee is conditionally active.
+  const deliveryFee     = (fulfillment === "delivery" && items.length > 0) ? 2000 : 0; 
+  const grandTotal      = total + deliveryFee;
   const stripeAvailable = !!PUBLISHABLE_KEY;
 
   useEffect(() => {
@@ -334,13 +334,13 @@ export default function Cart({ navigate }) {
   }, [payMethod]);
 
   const createOrder = async (paymentMethod) => {
-    // Adding a runtime timestamp forces the PWA worker to drop cached interception maps on form submit
     const cacheBuster = `?t=${Date.now()}`;
     const { order } = await ordersApi.place({
       vendorId,
-      address:       delivery.address,
-      deliveryLat:   delivery.lat,
-      deliveryLng:   delivery.lng,
+      fulfillmentType: fulfillment,
+      address:       fulfillment === "delivery" ? delivery.address : "Self Pick-up from Restaurant",
+      deliveryLat:   fulfillment === "delivery" ? delivery.lat : null,
+      deliveryLng:   fulfillment === "delivery" ? delivery.lng : null,
       paymentMethod,
       items: items.map(i => ({ menuItemId: i.id, qty: i.qty })),
     }, cacheBuster);
@@ -348,7 +348,7 @@ export default function Cart({ navigate }) {
   };
 
   const placeOrder = async () => {
-    if (!delivery.address.trim()) { setError("Please set a delivery address."); return; }
+    if (fulfillment === "delivery" && !delivery.address.trim()) { setError("Please set a delivery address."); return; }
     setError(""); setLoading(true);
 
     try {
@@ -424,31 +424,56 @@ export default function Cart({ navigate }) {
           ))}
         </div>
 
-        {/* Delivery address */}
-        <p className="cv2-section-title">📍 Delivery Address</p>
-        {showPicker ? (
-          <div style={{ marginBottom: 20 }}>
-            <AddressPicker
-              initialAddress={delivery.address}
-              onConfirm={({ address, lat, lng }) => { setDelivery({ address, lat, lng }); setShowPicker(false); }}
-              onCancel={() => setShowPicker(false)}
-            />
-          </div>
-        ) : (
-          <button onClick={() => setShowPicker(true)}
-            style={{ width: "100%", textAlign: "left", background: delivery.address ? "#f7f5f2" : "#fff", border: `1.5px solid ${delivery.address ? "#e8e4df" : "#e53935"}`, borderRadius: 12, padding: "13px 14px", marginBottom: 20, fontFamily: "DM Sans,sans-serif", fontSize: 13, color: delivery.address ? "#0f0f0f" : "#b0a89f", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8 }}>
-            <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
-            <span style={{ lineHeight: 1.5, flex: 1 }}>{delivery.address || "Tap to set your delivery location on the map…"}</span>
-            <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "#e53935", fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
+        {/* New Fulfillment Option Segment */}
+        <p className="cv2-section-title">📦 Order Method</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#f1eee9", padding: 4, borderRadius: 12 }}>
+          <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "delivery" ? "#white" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "delivery" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
+            🛵 Delivery
           </button>
+          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#white" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "pickup" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
+            🛍️ Self Pick-Up
+          </button>
+        </div>
+
+        {/* Conditional Address Selection based on Option selection */}
+        {fulfillment === "delivery" && (
+          <>
+            <p className="cv2-section-title">📍 Delivery Address</p>
+            {showPicker ? (
+              <div style={{ marginBottom: 20 }}>
+                <AddressPicker
+                  initialAddress={delivery.address}
+                  onConfirm={({ address, lat, lng }) => { setDelivery({ address, lat, lng }); setShowPicker(false); }}
+                  onCancel={() => setShowPicker(false)}
+                />
+              </div>
+            ) : (
+              <button onClick={() => setShowPicker(true)}
+                style={{ width: "100%", textAlign: "left", background: delivery.address ? "#f7f5f2" : "#fff", border: `1.5px solid ${delivery.address ? "#e8e4df" : "#e53935"}`, borderRadius: 12, padding: "13px 14px", marginBottom: 20, fontFamily: "DM Sans,sans-serif", fontSize: 13, color: delivery.address ? "#0f0f0f" : "#b0a89f", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+                <span style={{ lineHeight: 1.5, flex: 1 }}>{delivery.address || "Tap to set your delivery location on the map…"}</span>
+                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "#e53935", fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
+              </button>
+            )}
+          </>
+        )}
+
+        {fulfillment === "pickup" && (
+          <div style={{ padding: "14px", background: "#f7f5f2", borderRadius: 12, border: "1.5px dashed #e8e4df", marginBottom: 20, fontSize: 13, color: "#7a7065", lineHeight: 1.5 }}>
+            🏪 Collect your package directly from <strong>{vendorName}</strong>. We'll update your feed with status changes when your kitchen flags it ready.
+          </div>
         )}
 
         {/* Summary */}
         <p className="cv2-section-title">Order summary</p>
         <div className="cv2-summary">
           <div className="cv2-summary-row"><span>Subtotal</span><span>{total.toLocaleString()} TSh</span></div>
-          <div className="cv2-summary-row"><span>Taxes (5%)</span><span>{taxes.toLocaleString()} TSh</span></div>
-          <div className="cv2-summary-row"><span>Delivery fee</span><span>{deliveryFee.toLocaleString()} TSh</span></div>
+          {fulfillment === "delivery" && (
+            <div className="cv2-summary-row"><span>Delivery fee</span><span>{deliveryFee.toLocaleString()} TSh</span></div>
+          )}
+          {fulfillment === "pickup" && (
+            <div className="cv2-summary-row"><span>Delivery fee</span><span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span></div>
+          )}
           <div className="cv2-summary-divider" />
           <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>{grandTotal.toLocaleString()} TSh</span></div>
         </div>
@@ -511,7 +536,7 @@ export default function Cart({ navigate }) {
             <span className="cv2-bottom-total-label">Total amt</span>
             <span className="cv2-bottom-total-amount">{grandTotal.toLocaleString()} TSh</span>
           </div>
-          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || !delivery.address}>
+          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || (fulfillment === "delivery" && !delivery.address)}>
             {loading ? "Placing…" : "Pay Now"}
           </button>
         </div>
