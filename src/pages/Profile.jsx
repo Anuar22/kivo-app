@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
-import { useTheme } from "../context/ThemeContext.jsx";
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 import { fmt } from "../utils/currency.js";
