@@ -16,7 +16,7 @@ function timeAgo(ts) {
 const STATUS_STYLE = {
   Pending:   { bg: "#fff8e1", color: "#b8860b" },
   Accepted:  { bg: "#e8f5e9", color: "#2e7d32" },
-  Cooking:   { bg: "#fff3e0", color: "#e65100" },
+  Preparing:   { bg: "#fff3e0", color: "#e65100" },
   Ready:     { bg: "#e3f2fd", color: "#1565c0" },
   Delivered: { bg: "#e8f5e9", color: "#2e7d32" },
   Cancelled: { bg: "#fdecea", color: "#c62828" },
