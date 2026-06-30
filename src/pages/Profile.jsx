@@ -250,7 +250,9 @@ export default function Profile({ navigate }) {
         position: "relative", 
         borderBottomLeftRadius: 32, 
         borderBottomRightRadius: 32,
-        overflow: "visible"
+        overflow: "visible",
+        margin: 0,            // Kills left/right/top space
+        paddingTop: 8,        // Gives icons a slight breathing room from the actual physical notch
       }}>
         {/* Navigation Row */}
         <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 20px" }}>
