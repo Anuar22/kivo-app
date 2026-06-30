@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { AccountProvider, useAccount } from "./context/AccountContext.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
@@ -36,7 +36,25 @@ function KivoShell() {
     return (
       <>
         <style>{CSS}</style>
-        <div className="kivo-root"><div className="boot-screen">Loading Kivo...</div></div>
+        <div className="kivo-root" style={{ 
+          backgroundColor: "#dc2626", 
+          minHeight: "100vh", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%"
+        }}>
+          <div style={{ width: "100%", maxWidth: "240px", display: "flex", justifyContent: "center" }}>
+            <img 
+              src="/icons/red-screen.png" 
+              alt="Loading Kivo..." 
+              style={{ width: "100%", height: "auto", objectFit: "contain" }} 
+            />
+          </div>
+        </div>
       </>
     );
   }
