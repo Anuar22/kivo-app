@@ -43,7 +43,7 @@ function ListRow({ icon, label, onClick, badge }) {
       type="button" onClick={onClick}
       style={{
         width: "100%", display: "flex", alignItems: "center", background: "none",
-        border: "none", padding: "14px 0", cursor: "pointer", borderBottom: "1px solid #fdfdfd"
+        border: "none", padding: "14px 0", cursor: "pointer", borderBottom: "1px solid #faf8h6"
       }}
     >
       <span style={{ marginRight: 12, fontSize: 16 }}>{icon}</span>
@@ -57,28 +57,6 @@ function ListRow({ icon, label, onClick, badge }) {
         <path d="M9 18l6-6-6-6"/>
       </svg>
     </button>
-  );
-}
-
-function ThemeRow({ theme, onToggle }) {
-  const isDark = theme === "dark";
-  return (
-    <div style={{ display: "flex", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #fdfdfd" }}>
-      <span style={{ marginRight: 12, fontSize: 16 }}>{isDark ? "🌙" : "☀️"}</span>
-      <span style={{ flex: 1, textAlign: "left", fontSize: 14, fontWeight: 500, color: "#5c534c" }}>Dark mode</span>
-      <button
-        type="button" onClick={onToggle}
-        style={{
-          width: 44, height: 26, borderRadius: 13, border: "none", cursor: "pointer",
-          background: isDark ? "#e53935" : "#e8e4df", position: "relative", transition: "background 0.2s",
-        }}
-      >
-        <span style={{
-          position: "absolute", top: 3, left: isDark ? 21 : 3, width: 20, height: 20,
-          borderRadius: "50%", background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.25)", transition: "left 0.2s",
-        }} />
-      </button>
-    </div>
   );
 }
 
@@ -127,84 +105,35 @@ export default function Profile({ navigate }) {
     }
   };
 
-  const savePaymentSettings = async (e) => {
-    e.preventDefault();
-    setUpdatingPayment(true);
-    try {
-      const { user: updated } = await apiRequest("/api/auth/me/update-payment", {
-        method: "PATCH",
-        body: { savedPaymentPhone: payPhone, hasSavedCard },
-      });
-      updateUser(updated);
-      setShowPayPopup(false);
-    } catch (e) {
-      alert(e.message || "Failed to update wallet parameters.");
-    } finally {
-      setUpdatingPayment(false);
-    }
-  };
-
   return (
-    <div style={{ 
-      background: "#fafaf9", 
-      minHeight: "100vh", 
-      paddingBottom: 100, 
-      fontFamily: "DM Sans, sans-serif",
-      boxSizing: "border-box",
-      // 🔥 THE NEGATIVE MARGIN PULL: Cancels any layout container padding on the page wrapper
-      margin: "-100px -50px 0 -50px", 
-      paddingTop: 100,
-      paddingLeft: 50,
-      paddingRight: 50,
-      overflowX: "hidden"
-    }}>
+    <div style={{ background: "#fafaf9", minHeight: "100vh", padding: "24px 20px 100px", fontFamily: "DM Sans, sans-serif", boxSizing: "border-box" }}>
       
-      {/* ── Outer header section alignment zone ── */}
-      <div style={{ margin: "0 -50px", position: "relative" }}>
-        {/* Top Header Banner */}
-        <div style={{ 
-          background: "linear-gradient(180deg, #ff4d4d 0%, #e53935 100%)", 
-          height: 180, 
-          borderBottomLeftRadius: 32, 
-          borderBottomRightRadius: 32,
-          position: "relative"
-        }}>
-          {/* Navigation Controls */}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 24px" }}>
-            <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                <path d="M19 12H5M12 5l-7 7 7 7"/>
-              </svg>
-            </button>
-            <button style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-              </svg>
-            </button>
-          </div>
+      {/* ── Minimalist Top Navigation Header Bar ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#362f2d" strokeWidth="2.5">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#362f2d" }}>My Profile</h2>
+        <div style={{ width: 24 }} /> {/* Balancing spacer */}
+      </div>
 
-          {/* Overlapping Floating Squircle Profile Pic */}
-          <div style={{ position: "absolute", bottom: -45, left: "50%", transform: "translateX(-50%)", zIndex: 5 }}>
-            <div style={{ width: 96, height: 96, borderRadius: 24, background: "#fff", padding: 4, boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}>
-              <div style={{ 
-                width: "100%", height: "100%", borderRadius: 20, background: "#ffebea", 
-                display: "flex", alignItems: "center", justifyCenter: "center", display: "flex", justifyContent:"center",
-                fontSize: 32, fontWeight: 700, color: "#e53935", alignItems:"center"
-              }}>
-                {form.name ? form.name[0].toUpperCase() : "👤"}
-              </div>
-            </div>
-          </div>
+      {/* ── Flat Clean Identity Card ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24, padding: "0 4px" }}>
+        <div style={{ width: 64, height: 64, borderRadius: 16, background: "#ffebea", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#e53935" }}>
+          {form.name ? form.name[0].toUpperCase() : "👤"}
+        </div>
+        <div>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: 18, fontWeight: 700, color: "#362f2d" }}>{form.name || "User Profile"}</h3>
+          <p style={{ margin: 0, fontSize: 13, color: "#7a7065" }}>{form.email}</p>
         </div>
       </div>
 
-      {/* ── Main Form Content Card Panel ── */}
-      <div style={{ maxWidth: 420, margin: "65px auto 0", boxSizing: "border-box" }}>
-        
+      {/* ── Form Inputs Container ── */}
+      <div style={{ maxWidth: 450, margin: "0 auto" }}>
         <div style={{ background: "white", borderRadius: 24, padding: "24px 20px", boxShadow: "0 4px 20px rgba(0,0,0,0.01)" }}>
           
-          {/* Top Quick Stats display row */}
           {stats && (
             <div style={{ display: "flex", justifyContent: "space-around", background: "#fafaf9", padding: "12px 6px", borderRadius: 16, marginBottom: 24 }}>
               <div style={{ textAlign: "center" }}>
@@ -225,38 +154,28 @@ export default function Profile({ navigate }) {
           )}
 
           <Field label="Name" value={form.name} onChange={set("name")} placeholder="Your name" />
-          <Field label="Email" value={form.email} type="email" disabled />
           <Field label="Delivery address" value={form.address} onChange={set("address")} placeholder="Address location" />
           <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="Phone contact" />
-          <Field label="Password" value={form.password} type="password" disabled />
 
           {error && <p style={{ color: "#ef4444", fontSize: 13, margin: "0 0 12px 0", textAlign: "center" }}>{error}</p>}
 
           <div style={{ height: 1, background: "#f5f3f0", margin: "16px 0" }} />
 
-          <ThemeRow theme={theme} onToggle={toggleTheme} />
           <ListRow icon="💳" label="Payment Details" onClick={() => setShowPayPopup(true)} badge={hasSavedCard ? "Active" : null} />
           <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
         </div>
 
-        {/* ── Side-by-Side Lower Action Button Grid ── */}
+        {/* ── Bottom Grid Buttons ── */}
         <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
           <button 
             type="button" onClick={save} disabled={saving}
             style={{ 
               flex: 1.2, height: 50, background: "#362f2d", color: "white", border: "none", 
               borderRadius: 16, fontWeight: 700, fontSize: 14, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              boxShadow: "0 4px 12px rgba(54, 47, 45, 0.1)"
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8
             }}
           >
-            {saving ? "Saving…" : "Edit Profile"}
-            {!saving && (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            )}
+            {saving ? "Saving…" : "Save Changes"}
           </button>
 
           <button 
@@ -268,61 +187,9 @@ export default function Profile({ navigate }) {
             }}
           >
             Log out
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="2.5">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
           </button>
         </div>
-
       </div>
-
-      {/* ── Overlay Popup Form Modal Component ── */}
-      {showPayPopup && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <form onSubmit={savePaymentSettings} style={{ background: "white", width: "100%", maxWidth: 360, borderRadius: 20, padding: 24, boxShadow: "0 10px 25px rgba(0,0,0,0.1)", boxSizing:"border-box" }}>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: "#362f2d" }}>Payment Details</h3>
-            <p style={{ margin: "0 0 20px 0", fontSize: 12, color: "#7a7065", lineHeight: 1.4 }}>Set standard parameters for checkout operations.</p>
-            
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#7a7065", marginBottom: 6 }}>Default Mobile Money Number</label>
-              <input 
-                type="tel" 
-                style={{ width: "100%", height: 44, border: "1px solid #e8e4df", borderRadius: 12, padding: "0 12px", fontSize: 13, boxSizing:"border-box", outline:"none" }}
-                value={payPhone} 
-                onChange={e => setPayPhone(e.target.value)} 
-                placeholder="e.g. 0712345678" 
-              />
-            </div>
-
-            <div style={{ background: "#fafaf9", borderRadius: 12, padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, border: "1px solid #edebe8" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 16 }}>💳</span>
-                <div>
-                  <span style={{ fontSize: 13, fontWeight: 600, display: "block", color: "#362f2d" }}>Credit / Debit Card</span>
-                  <span style={{ fontSize: 11, color: hasSavedCard ? "#16a34a" : "#7a7065" }}>{hasSavedCard ? "Token linked securely" : "No saved cards"}</span>
-                </div>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={hasSavedCard} 
-                onChange={e => setHasSavedCard(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: "#e53935", cursor: "pointer" }}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="submit" disabled={updatingPayment} style={{ flex: 1.2, height: 42, background: "#362f2d", color: "white", border: "none", borderRadius: 12, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-                {updatingPayment ? "Saving…" : "Save Wallet"}
-              </button>
-              <button type="button" onClick={() => setShowPayPopup(false)} style={{ flex: 1, height: 42, background: "none", border: "1px solid #e8e4df", borderRadius: 12, fontSize: 13, color: "#7a7065", cursor: "pointer" }}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {success && (
         <SuccessModal
