@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { vendorsApi } from "../api/index.js";
 import { categories, popularMeals } from "../data/index.js";
 import { fmt } from "../utils/currency.js";
-import { useTheme } from "../context/ThemeContext.jsx"; // ── Imported Theme Context
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -63,7 +62,7 @@ function useCustomerLocation() {
 }
 
 // ── Full-screen restaurant map ────────────────────────────────────────────────
-function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, darkMode }) {
+function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }) {
   const containerRef = useRef(null);
   const mapRef       = useRef(null);
   const markersRef   = useRef([]);
@@ -79,6 +78,7 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
 
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
+      // Center on customer location or first vendor with coords, or Dar es Salaam
       const defaultCenter = customerCoords
         ? [customerCoords.lng, customerCoords.lat]
         : vendors.find(v => v.latitude)
@@ -87,25 +87,27 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
-        style: darkMode ? "mapbox://styles/mapbox/dark-v11" : "mapbox://styles/mapbox/streets-v12",
+        style: "mapbox://styles/mapbox/streets-v12",
         center: defaultCenter,
         zoom: customerCoords ? 14 : 12,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
+      // Customer "You are here" blue pulsing dot
       if (customerCoords) {
         const el = document.createElement("div");
         el.style.cssText = `
-          width: 20px; height: 20px; background: #e53935;
+          width: 20px; height: 20px; background: #2563eb;
           border: 3px solid white; border-radius: 50%;
-          box-shadow: 0 0 0 6px rgba(229,57,53,0.3);
+          box-shadow: 0 0 0 6px rgba(37,99,235,0.2);
         `;
         new mapboxgl.Marker({ element: el })
           .setLngLat([customerCoords.lng, customerCoords.lat])
           .addTo(map);
       }
 
+      // Vendor pins
       vendors.forEach(v => {
         if (!v.latitude || !v.longitude) return;
         const lat = Number(v.latitude);
@@ -113,25 +115,28 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
 
         const el = document.createElement("div");
         el.style.cssText = `
-          background: ${darkMode ? "#1e1e1e" : "white"};
-          border: 2px solid #e53935;
+          background: white;
+          border: 2.5px solid #e53935;
           border-radius: 12px;
-          padding: 6px 12px;
+          padding: 5px 10px;
           font-size: 13px;
           font-weight: 700;
           font-family: DM Sans, sans-serif;
           white-space: nowrap;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+          box-shadow: 0 3px 12px rgba(0,0,0,0.18);
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           cursor: pointer;
+          max-width: 140px;
           transition: transform 0.15s;
         `;
         el.innerHTML = `
           <span style="font-size:16px">${v.image || "🍽️"}</span>
-          <span style="color:${darkMode ? "#f5f5f5" : "#0f0f0f"}">${v.name}</span>
+          <span style="color:#0f0f0f;overflow:hidden;text-overflow:ellipsis">${v.name}</span>
         `;
+        el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.05)"; });
+        el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
         el.addEventListener("click", () => {
           map.flyTo({ center: [lng, lat], zoom: 16, duration: 600 });
           setSelected(v);
@@ -148,6 +153,7 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
       map.on("load", () => {
         if (mounted) {
           map.resize();
+          setTimeout(() => { if (mounted) map.resize(); }, 300);
           setMapReady(true);
         }
       });
@@ -159,6 +165,7 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
       mapRef.current?.remove();
+      mapRef.current = null;
     };
   }, []);
 
@@ -168,76 +175,127 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
     <div style={{
       position: "fixed", inset: 0, zIndex: 300,
       display: "flex", flexDirection: "column",
-      background: darkMode ? "#121212" : "#fafaf9",
+      background: "#f7f5f2",
     }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "16px 20px",
-        background: darkMode ? "#1e1e1e" : "white",
-        borderBottom: darkMode ? "1px solid #2d2c2a" : "1px solid #f4f1ed",
+        background: "white",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
         zIndex: 1,
       }}>
         <div>
-          <p style={{ fontWeight: 800, fontSize: 16, margin: 0, fontFamily: "DM Sans, sans-serif", color: darkMode ? "#f5f5f5" : "#362f2d" }}>
-            📍 Nearby Vendors
+          <p style={{ fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "Georgia,serif" }}>
+            🗺️ Restaurants Near You
           </p>
-          <p style={{ fontSize: 12, color: darkMode ? "#a3978c" : "#7a7065", margin: "2px 0 0" }}>
-            {mappableCount === 0 ? "No active locations mapped" : `${mappableCount} places ready`}
+          <p style={{ fontSize: 12, color: "#7a7065", margin: "2px 0 0" }}>
+            {mappableCount === 0
+              ? "No restaurants have set their location yet"
+              : `${mappableCount} restaurant${mappableCount !== 1 ? "s" : ""} on the map`}
           </p>
         </div>
         <button
           onClick={onClose}
           style={{
             width: 36, height: 36, borderRadius: "50%",
-            background: darkMode ? "#2d2c2a" : "#fafaf9", border: "none",
-            fontSize: 14, cursor: "pointer", color: darkMode ? "#f5f5f5" : "#362f2d",
+            background: "#f7f5f2", border: "none",
+            fontSize: 18, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >✕</button>
       </div>
 
-      {/* Map Display area */}
-      <div style={{ flex: 1, position: "relative" }}>
-        <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
+      {/* Map */}
+      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+        <div
+          ref={containerRef}
+          style={{ position: "absolute", inset: 0 }}
+        />
 
+        {/* Loading overlay */}
         {!mapReady && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: darkMode ? "#121212" : "#fafaf9", gap: 12 }}>
-            <p style={{ fontSize: 13, color: darkMode ? "#a3978c" : "#7a7065" }}>Initializing Radar View…</p>
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            background: "#f7f5f2", gap: 12,
+          }}>
+            <div style={{ fontSize: 36 }}>🗺️</div>
+            <p style={{ fontSize: 14, color: "#7a7065" }}>Loading map…</p>
           </div>
         )}
 
+        {/* No locations placeholder */}
+        {mapReady && mappableCount === 0 && (
+          <div style={{
+            position: "absolute", bottom: 80, left: "50%",
+            transform: "translateX(-50%)",
+            background: "white", borderRadius: 14,
+            padding: "12px 20px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+            fontSize: 13, color: "#7a7065", whiteSpace: "nowrap",
+          }}>
+            😕 No restaurants have pinned their location yet
+          </div>
+        )}
+
+        {/* Selected vendor card */}
         {selected && (
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            background: darkMode ? "#1e1e1e" : "white",
-            borderRadius: "24px 24px 0 0",
+            background: "white",
+            borderRadius: "20px 20px 0 0",
             padding: "20px 20px 32px",
             boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
-            display: "flex", alignItems: "center", gap: 14,
+            display: "flex", alignItems: "flex-start", gap: 14,
+            animation: "slideUp 0.2s ease",
           }}>
+            {/* Drag handle */}
             <div style={{
-              width: 54, height: 54, borderRadius: 12,
-              background: darkMode ? "#121212" : "#fafaf9",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+              position: "absolute", top: 8, left: "50%",
+              transform: "translateX(-50%)",
+              width: 36, height: 4, borderRadius: 2,
+              background: "#e8e4df",
+            }} />
+
+            {/* Vendor image/emoji */}
+            <div style={{
+              width: 64, height: 64, borderRadius: 14,
+              overflow: "hidden", flexShrink: 0,
+              background: "#f7f5f2",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 36, border: "1px solid #e8e4df",
             }}>
-              {selected.image || "🍽️"}
+              {selected.cover_image_url
+                ? <img src={selected.cover_image_url} alt={selected.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : selected.image || "🍽️"
+              }
             </div>
+
+            {/* Info */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 2px", color: darkMode ? "#f5f5f5" : "#362f2d", fontFamily: "DM Sans" }}>{selected.name}</p>
-              <div style={{ display: "flex", gap: 8, fontSize: 12, color: darkMode ? "#a3978c" : "#7a7065" }}>
+              <p style={{ fontWeight: 800, fontSize: 16, margin: "0 0 2px", fontFamily: "Georgia,serif" }}>{selected.name}</p>
+              <p style={{ fontSize: 12, color: "#7a7065", margin: "0 0 6px" }}>{selected.category}</p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "#7a7065" }}>
                 <span>⭐ {selected.rating || "New"}</span>
-                <span>⏱️ {selected.deliveryTime}</span>
+                {selected.distance && <span>📍 {selected.distance}</span>}
+                <span>⏱ {selected.delivery_time || selected.deliveryTime || "20–35 min"}</span>
+                <span>🛵 {fmt(selected.delivery_fee ?? selected.deliveryFee ?? 2)}</span>
               </div>
             </div>
+
+            {/* Order button */}
             <button
               onClick={() => { onVendorSelect(selected); onClose(); }}
               style={{
                 background: "#e53935", border: "none", borderRadius: 12,
-                padding: "10px 16px", color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer"
+                padding: "10px 18px", color: "white",
+                fontWeight: 700, fontSize: 14, cursor: "pointer",
+                fontFamily: "DM Sans, sans-serif", flexShrink: 0,
               }}
             >
-              View Menu
+              Order
             </button>
           </div>
         )}
@@ -246,9 +304,8 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose, 
   );
 }
 
-// ── Main Home Dashboard ───────────────────────────────────────────────────────
+// ── Main Home ─────────────────────────────────────────────────────────────────
 export default function Home({ navigate }) {
-  const { darkMode } = useTheme(); // ── Hook connected here
   const [showMap,         setShowMap]         = useState(false);
   const [search,          setSearch]          = useState("");
   const [activeCategory,  setActiveCategory]  = useState(1);
@@ -278,248 +335,199 @@ export default function Home({ navigate }) {
     reviewCount:  v.review_count ?? v.reviews ?? 0,
   });
 
+  // Lock body scroll when map is open
   useEffect(() => {
     document.body.style.overflow = showMap ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [showMap]);
 
   return (
-    <div style={{
-      background: darkMode ? "#121212" : "#fafaf9",
-      minHeight: "100vh",
-      fontFamily: "DM Sans, sans-serif",
-      boxSizing: "border-box",
-      transition: "background 0.2s ease-in-out",
-      paddingBottom: 40
-    }}>
+    <div className="page home-page">
 
+      {/* ── Full-screen map modal ── */}
       {showMap && (
         <RestaurantMapModal
           vendors={vendors.map(shape)}
           customerCoords={coords}
           onVendorSelect={v => navigate("vendor", v)}
           onClose={() => setShowMap(false)}
-          darkMode={darkMode}
         />
       )}
 
-      {/* ── Top Premium Address Banner & Header Row ── */}
-      <div style={{
-        padding: "calc(var(--sat) + 16px) 16px 12px",
-        background: darkMode ? "#1e1e1e" : "white",
-        borderBottom: darkMode ? "1px solid #1a1a19" : "1px solid #f2eee9"
-      }}>
-        <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: darkMode ? "#a3978c" : "#7a7065", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Delivering To
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
-          <h1 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d", display: "flex", alignItems: "center", gap: 4 }}>
-            📍 {coords ? "Current Location" : "Dar es Salaam, TZ"}
-          </h1>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#e53935", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 12 }}>
-            K
+      {/* ── Hero ── */}
+      <div className="home-hero">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
+          <div>
+            <p className="greeting-sub">Good afternoon 👋</p>
+            <h1 className="greeting-main">
+              What are you <br /><em>craving today?</em>
+            </h1>
           </div>
         </div>
 
-        {/* Search Bar Block */}
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 14 }}>
-          <div style={{
-            flex: 1, height: 46, borderRadius: 14,
-            background: darkMode ? "#121212" : "#f5f3f0",
-            display: "flex", alignItems: "center", padding: "0 14px",
-            border: darkMode ? "1px solid #2d2c2a" : "1px solid transparent"
-          }}>
-            <span style={{ marginRight: 8, fontSize: 15, color: "#7a7065" }}>🔍</span>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div className="search-bar" style={{ flex: 1 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
             <input
-              placeholder="Search dishes or kitchen vendors..."
+              placeholder="Search food or restaurants..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              style={{
-                width: "100%", background: "none", border: "none", outline: "none",
-                fontSize: 13, fontWeight: 500, color: darkMode ? "#f5f5f5" : "#362f2d"
-              }}
             />
-            {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "#7a7065", cursor: "pointer" }}>✕</button>}
+            {search && <button className="clear-search" onClick={() => setSearch("")}>✕</button>}
           </div>
 
+          {/* 📍 button — opens full-screen map */}
           <button
-            onClick={() => { if (!coords && !denied) request(); setShowMap(true); }}
+            onClick={() => {
+              if (!coords && !denied) request();
+              setShowMap(true);
+            }}
             style={{
               width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-              background: "#e53935", border: "none", cursor: "pointer",
+              background: coords ? "#e53935" : "rgba(255,255,255,0.15)",
+              border: coords ? "none" : "1.5px solid rgba(255,255,255,0.3)",
+              cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(229,57,53,0.25)"
+              transition: "background 0.2s",
+              boxShadow: coords ? "0 4px 12px rgba(229,57,53,0.4)" : "none",
             }}
+            title="View restaurants on map"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
             </svg>
           </button>
         </div>
+
+        {/* Location tag under search */}
+        {coords && (
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
+            <span>📍</span> Showing restaurants near you
+          </p>
+        )}
       </div>
 
-      {/* Location Nudge panel */}
+      {/* ── Location nudge (only if denied) ── */}
       {!coords && denied && (
-        <div style={{
-          margin: "12px 16px", padding: 12, borderRadius: 14,
-          background: darkMode ? "#1e1e1e" : "white",
-          border: darkMode ? "1px solid #2d2c2a" : "1px solid #e8e4df",
-          display: "flex", alignItems: "center", justifyBetween: "space-between", gap: 10
-        }}>
+        <div className="hv2-nudge" style={{ margin: "12px 16px" }}>
+          <span>📍</span>
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 600, fontSize: 13, margin: 0, color: darkMode ? "#f5f5f5" : "#362f2d" }}>Location Radar Disabled</p>
-            <p style={{ fontSize: 11, color: "#7a7065", margin: "2px 0 0" }}>Enable GPS parameters to list precise delivery distances.</p>
+            {hardBlocked ? (
+              <>
+                <p style={{ fontWeight: 600, fontSize: 13 }}>Location blocked</p>
+                <p style={{ fontSize: 12, color: "#999", marginTop: 1, lineHeight: 1.4 }}>
+                  Go to browser Settings → Site permissions → Location → allow Kivo, then refresh.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontWeight: 600, fontSize: 13 }}>Enable location for nearby results</p>
+                <p style={{ fontSize: 12, color: "#999", marginTop: 1 }}>We'll show closest restaurants first</p>
+              </>
+            )}
           </div>
           {!hardBlocked && (
-            <button onClick={request} style={{ background: "#e53935", color: "white", border: "none", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-              Allow
+            <button className="hv2-nudge-btn" onClick={request} disabled={asking}>
+              {asking ? "…" : "Allow"}
             </button>
           )}
         </div>
       )}
 
-      {/* Promo Banner Element */}
+      {/* ── Promo banner ── */}
       {!search && (
-        <div style={{
-          margin: "16px 16px 0", padding: 16, borderRadius: 20,
-          background: "linear-gradient(135deg, #e53935 0%, #b71c1c 100%)",
-          color: "white", display: "flex", justifyContent: "space-between", alignItems: "center",
-          boxShadow: "0 6px 20px rgba(229,57,53,0.15)"
-        }}>
-          <div>
-            <span style={{ fontSize: 9, fontWeight: 800, background: "rgba(255,255,255,0.2)", padding: "2px 6px", borderRadius: 6, uppercase: "true" }}>Promo</span>
-            <h3 style={{ margin: "6px 0 2px", fontSize: 15, fontWeight: 700 }}>Free delivery on your 1st order!</h3>
-            <p style={{ margin: 0, fontSize: 12, opacity: 0.9 }}>Use voucher code <strong style={{ textDecoration: "underline" }}>KIVO1ST</strong></p>
+        <div className="promo-banner">
+          <div className="promo-text">
+            <span className="promo-tag">🔥 LIMITED TIME</span>
+            <h3>Free delivery on first order!</h3>
+            <p>Use code <strong>KIVO1ST</strong></p>
           </div>
-          <span style={{ fontSize: 32 }}>🛵</span>
+          <div className="promo-art">🛵</div>
         </div>
       )}
 
-      {/* ── Category Horizontal Carousel ── */}
-      <div style={{ padding: "16px 0 4px" }}>
-        <div style={{ display: "flex", gap: 10, overflowX: "auto", padding: "0 16px", scrollbarWidth: "none" }}>
-          {categories.map(cat => {
-            const isSel = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
-                  borderRadius: 100, border: "none", cursor: "pointer", flexShrink: 0,
-                  fontSize: 13, fontWeight: 600,
-                  background: isSel ? "#e53935" : (darkMode ? "#1e1e1e" : "white"),
-                  color: isSel ? "white" : (darkMode ? "#cbc2ba" : "#5c534c"),
-                  boxShadow: isSel ? "0 4px 12px rgba(229,57,53,0.2)" : "none",
-                  transition: "all 0.15s"
-                }}
-              >
-                <span>{cat.emoji}</span>
-                <span>{cat.name}</span>
-              </button>
-            );
-          })}
+      {/* ── Category pills ── */}
+      <section className="section">
+        <div className="categories-scroll">
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              className={`cat-pill ${activeCategory === cat.id ? "active" : ""}`}
+              onClick={() => setActiveCategory(cat.id)}
+            >
+              <span>{cat.emoji}</span><span>{cat.name}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* ── Popular Meals Carousel ── */}
+      {/* ── Popular section ── */}
       {activeCategory === 1 && !search && (
-        <div style={{ marginTop: 12 }}>
-          <h2 style={{ padding: "0 16px", margin: "0 0 10px", fontSize: 15, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>
-            🔥 Popular Right Now
-          </h2>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", padding: "0 16px", scrollbarWidth: "none" }}>
+        <section className="section">
+          <div className="section-header"><h2>🔥 Popular Right Now</h2></div>
+          <div className="popular-scroll">
             {popularMeals.map(meal => (
               <div
                 key={meal.id}
+                className="popular-card"
                 onClick={() => {
-                  const v = vendors.find(vend => vend.id === meal.vendorId);
+                  const v = vendors.find(v => v.id === meal.vendorId);
                   if (v) navigate("vendor", shape(v));
                 }}
-                style={{
-                  background: darkMode ? "#1e1e1e" : "white",
-                  borderRadius: 16, padding: 12, width: 140, flexShrink: 0, cursor: "pointer",
-                  boxShadow: darkMode ? "none" : "0 4px 12px rgba(0,0,0,0.01)"
-                }}
               >
-                <div style={{ height: 75, background: darkMode ? "#121212" : "#fafaf9", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>
-                  {meal.image}
-                </div>
-                <p style={{ margin: "8px 0 2px", fontSize: 13, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meal.name}</p>
-                <p style={{ margin: "0 0 8px", fontSize: 11, color: "#7a7065", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meal.vendorName}</p>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#e53935" }}>{fmt(meal.price)}</span>
-                  <span style={{ fontSize: 11, fontWeight: 500, color: darkMode ? "#a3978c" : "#7a7065" }}>⭐ {meal.rating}</span>
+                <span className="popular-emoji">{meal.image}</span>
+                <p className="popular-name">{meal.name}</p>
+                <p className="popular-vendor">{meal.vendorName}</p>
+                <div className="popular-bottom">
+                  <span className="popular-price">{fmt(meal.price)}</span>
+                  <span className="popular-rating">⭐ {meal.rating}</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* ── Main Vertical Restaurants List ── */}
-      <div style={{ marginTop: 24, padding: "0 16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>
-            {search ? `Results for "${search}"` : "🏪 Nearby Kitchen Vendors"}
-          </h2>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#7a7065", background: darkMode ? "#1e1e1e" : "#eae6e1", padding: "2px 8px", borderRadius: 8 }}>
-            {loading ? "…" : `${filtered.length} open`}
-          </span>
+      {/* ── Restaurants list ── */}
+      <section className="section">
+        <div className="section-header">
+          <h2>{search ? `Results for "${search}"` : "🏪 Nearby Restaurants"}</h2>
+          <span className="section-count">{loading ? "..." : `${filtered.length} places`}</span>
         </div>
-
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#7a7065", fontSize: 13 }}>Loading kitchens…</div>
+          <div className="empty-state"><p>Loading restaurants...</p></div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 16px", color: "#7a7065", background: darkMode ? "#1e1e1e" : "white", borderRadius: 20 }}>
-            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>No kitchens matching parameters.</p>
-            <p style={{ margin: "2px 0 0", fontSize: 12 }}>Try expanding your search filter keywords.</p>
-          </div>
+          <div className="empty-state"><p>😕 No results</p><span>Try a different search</span></div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="vendors-list">
             {filtered.map(raw => {
               const v = shape(raw);
               return (
-                <div 
-                  key={v.id} 
-                  onClick={() => navigate("vendor", v)}
-                  style={{
-                    background: darkMode ? "#1e1e1e" : "white",
-                    borderRadius: 20, overflow: "hidden", cursor: "pointer",
-                    boxShadow: darkMode ? "none" : "0 4px 16px rgba(0,0,0,0.02)",
-                    display: "flex", flexDirection: "column"
-                  }}
-                >
-                  {/* Cover Image Header Section */}
-                  <div style={{ height: 130, background: darkMode ? "#252524" : "#f2eee9", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {v.cover_image_url ? (
+                <div key={v.id} className="vendor-card" onClick={() => navigate("vendor", v)}>
+                  {v.cover_image_url ? (
+                    <div className="vendor-img" style={{ padding: 0, overflow: "hidden" }}>
                       <img src={v.cover_image_url} alt={v.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: 44 }}>{v.image || "🏪"}</span>
-                    )}
-                    {v.tag && (
-                      <span style={{ position: "absolute", top: 12, left: 12, background: v.tagColor, color: "white", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: 6, uppercase: "true" }}>
-                        {v.tag}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Vendor Meta Details */}
-                  <div style={{ padding: 14 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>{v.name}</h3>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d", display: "flex", alignItems: "center", gap: 2 }}>
-                        ⭐ {v.rating}
-                      </span>
+                      {v.tag && <span className="vendor-tag" style={{ background: v.tagColor }}>{v.tag}</span>}
                     </div>
-                    <p style={{ margin: "2px 0 10px", fontSize: 12, color: "#7a7065" }}>{v.category}</p>
-                    
-                    <div style={{ height: 1, background: darkMode ? "#2d2c2a" : "#f5f3f0", marginBottom: 10 }} />
-                    
-                    <div style={{ display: "flex", gap: 12, fontSize: 11, fontWeight: 500, color: darkMode ? "#a3978c" : "#7a7065" }}>
-                      {v.distance && <span style={{ display: "flex", alignItems: "center", gap: 3 }}>📍 {v.distance}</span>}
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>⏱️ {v.deliveryTime}</span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>🛵 Delivery: {fmt(v.deliveryFee)}</span>
+                  ) : (
+                    <div className="vendor-img">
+                      <span>{v.image}</span>
+                      {v.tag && <span className="vendor-tag" style={{ background: v.tagColor }}>{v.tag}</span>}
+                    </div>
+                  )}
+                  <div className="vendor-info">
+                    <div className="vendor-header">
+                      <h3>{v.name}</h3>
+                      <span className="vendor-rating">⭐ {v.rating}</span>
+                    </div>
+                    <p className="vendor-category">{v.category}</p>
+                    <div className="vendor-meta">
+                      {v.distance && <span>📍 {v.distance}</span>}
+                      <span>⏱ {v.deliveryTime}</span>
+                      <span>🛵 {fmt(v.deliveryFee)}</span>
                     </div>
                   </div>
                 </div>
@@ -527,7 +535,8 @@ export default function Home({ navigate }) {
             })}
           </div>
         )}
-      </div>
+      </section>
+      <div style={{ height: 20 }} />
     </div>
   );
 }
