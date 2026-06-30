@@ -508,18 +508,24 @@ export default function AuthScreen() {
 
   // ── Landing — choose login or register ──────────────────────────────────────
   return (
-    <div className="auth-v2" style={{ backgroundColor: "#dc2626", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <div className="av2-header" style={{ padding: "72px 0 36px" }}>
-        {/* Logo container using your specific icon path */}
-        <div className="av2-logo" style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-          <img src="/icons/red-screen.png" alt="Kivo Logo" style={{ height: 50, width: "auto" }} />
+    <div className="auth-v2" style={{ backgroundColor: "#dc2626", minHeight: "100vh", display: "flex", flexDirection: "column", padding: "0 24px" }}>
+      {/* Centered header container that pushes down towards the middle */}
+      <div className="av2-header" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 0" }}>
+        {/* Large Splash Logo */}
+        <div className="av2-logo" style={{ width: "100%", maxWidth: "240px", display: "flex", justifyContent: "center" }}>
+          <img 
+            src="/icons/red-screen.png" 
+            alt="Kivo Logo" 
+            style={{ width: "100%", height: "auto", objectFit: "contain" }} 
+          />
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", paddingBottom: 24 }}>
+      {/* Buttons anchored to the bottom */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", paddingBottom: 40 }}>
         <button 
           className="av2-submit" 
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600" }} 
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", height: "50px", borderRadius: "8px" }} 
           onClick={() => goTo("register")}
         >
           Create an account
@@ -527,7 +533,7 @@ export default function AuthScreen() {
         
         <button
           className="av2-google-btn"
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600" }}
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", height: "50px", borderRadius: "8px" }}
           onClick={() => goTo("login")}
         >
           I already have an account
