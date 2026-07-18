@@ -303,10 +303,6 @@ const CSS = `
   .success-modal-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,15,15,0.75); display: flex; align-items: center; justify-content: center; padding: 24px; }
   .success-modal-card { background: var(--card); border-radius: 22px; padding: 32px 24px 24px; max-width: 320px; width: 100%; text-align: center; border: 1px solid #222; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
   .success-modal-title { font-family: var(--font-heading); font-weight: 800; font-size: 21px; color: var(--orange); margin-bottom: 8px; }
-  .success-modal-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--orange); display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; box-shadow: 0 8px 20px rgba(229,57,53,0.35); }
-  .success-modal-text { font-size: 13px; color: var(--on-surface-muted); line-height: 1.6; margin-bottom: 22px; }
-  .success-modal-btn { width: 100%; background: var(--orange); border: none; border-radius: 14px; padding: 14px; color: #ffffff; font-weight: 700; font-size: 14px; cursor: pointer; font-family: var(--font-body); box-shadow: 0 6px 16px rgba(229,57,53,0.3); transition: transform 0.15s; }
-  .success-modal-btn:active { transform: scale(0.97); }
 
   /* ── PROFILE V2 ── */
   .pv2-banner { background: linear-gradient(135deg, #d32f2f 0%, #e53935 60%, #b71c1c 100%); height: calc(150px + var(--sat)); border-radius: 0 0 32px 32px; position: relative; }
@@ -419,27 +415,6 @@ p, span, .review-time, .review-text, .ov2-card-meta {
 .popular-badge {
   box-shadow: none !important;
 }
-
-/* Nuke the top whitespace completely on the vendor page */
-.vendor-page {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* Push the navigation bar right up to the top boundary */
-.vendor-nav-header {
-  top: 0 !important;
-  margin-top: -24px !important; /* Forces the header up to fill the layout gap */
-  padding-top: 16px !important;  /* Safe space padding so it doesn't clip the text */
-}
-
-/* Ensure the main page container doesn't force a gap */
-divhas(> .vendor-page) {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-
 `;
 
 export default CSS;

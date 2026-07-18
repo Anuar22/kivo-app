@@ -1,118 +1,150 @@
 import { useCart } from "../context/CartContext.jsx";
 
+function Icon({ name, size = 22 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+  };
+
+  const paths = {
+    back: (
+      <>
+        <path d="M19 12H5" />
+        <path d="m12 19-7-7 7-7" />
+      </>
+    ),
+    home: (
+      <>
+        <path d="m3 11 9-8 9 8" />
+        <path d="M5 10v10h14V10" />
+        <path d="M9 20v-6h6v6" />
+      </>
+    ),
+    heart: (
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+    ),
+    cart: (
+      <>
+        <circle cx="9" cy="20" r="1.5" />
+        <circle cx="18" cy="20" r="1.5" />
+        <path d="M2 3h3l2.2 11.3a2 2 0 0 0 2 1.7h7.7a2 2 0 0 0 2-1.6L20 8H6" />
+      </>
+    ),
+    orders: (
+      <>
+        <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2Z" />
+        <path d="M9 7h6" />
+        <path d="M9 11h6" />
+        <path d="M9 15h4" />
+      </>
+    ),
+    profile: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
+  };
+
+  return <svg {...common}>{paths[name]}</svg>;
+}
+
 export function Navbar({ screen, navigate }) {
   const { count } = useCart();
-  const titles = { vendor: "Restaurant", cart: "My Cart", orders: "My Orders", profile: "Profile" };
 
-  if (screen === "home" || screen === "profile" || screen === "orders" || screen === "following") return null; // these have their own headers
+  const titles = {
+    vendor: "Restaurant",
+    cart: "My Cart",
+    orders: "Orders",
+    profile: "Profile",
+    following: "Following",
+  };
+
+  // Hides the global navbar on these screens since they handle their own layout headers
+  if (["home", "profile", "orders", "following", "cart", "vendor"].includes(screen)) return null;
 
   return (
-    <nav className="navbar">
-      <div className="nav-inner nav-page">
-        <button className="nav-back" onClick={() => navigate("home")}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M19 12H5M12 5l-7 7 7 7"/>
-          </svg>
+    <header className="navbar">
+      <button className="nav-btn" onClick={() => navigate("home")} aria-label="Go home">
+        <Icon name="back" />
+      </button>
+
+      <h2 className="nav-title">{titles[screen] || "Kivo"}</h2>
+
+      {screen === "cart" ? (
+        <div style={{ width: 44 }} />
+      ) : (
+        <button
+          className="nav-btn"
+          onClick={() => navigate("cart")}
+          style={{ position: "relative" }}
+          aria-label="Open cart"
+        >
+          <Icon name="cart" />
+
+          {count > 0 && <span className="cart-badge">{count}</span>}
         </button>
-        <span className="nav-title">{titles[screen]}</span>
-        {screen === "cart" ? (
-          <div style={{ width: 36 }} />
-        ) : (
-          <button className="nav-icon-btn" onClick={() => navigate("cart")} style={{ position: "relative" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-              <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-            </svg>
-            {count > 0 && <span className="cart-badge">{count}</span>}
-          </button>
-        )}
-      </div>
-    </nav>
+      )}
+    </header>
   );
 }
 
 export function BottomNav({ screen, navigate }) {
   const { count } = useCart();
 
-  if (screen === "cart") return null; // Cart has its own sticky Pay Now bar
+  if (screen === "cart") return null;
 
-  const left = [
-    {
-      id: "home", label: "Home",
-      icon: (active) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "#e53935" : "none"} stroke={active ? "#e53935" : "#bbb"} strokeWidth="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      ),
-    },
-    {
-      id: "profile", label: "Profile",
-      icon: (active) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "#e53935" : "none"} stroke={active ? "#e53935" : "#bbb"} strokeWidth="2">
-          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
-        </svg>
-      ),
-    },
-  ];
-
-  const right = [
-    {
-      id: "orders", label: "Orders",
-      icon: (active) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? "#e53935" : "#bbb"} strokeWidth="2">
-          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-          <rect x="9" y="3" width="6" height="4" rx="2"/>
-          <path d="M9 12h6M9 16h4"/>
-        </svg>
-      ),
-    },
-    {
-      id: "following", label: "Following",
-      icon: (active) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "#e53935" : "none"} stroke={active ? "#e53935" : "#bbb"} strokeWidth="2">
-          <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-        </svg>
-      ),
-    },
+  const tabs = [
+    { id: "home", label: "Home", icon: "home" },
+    { id: "following", label: "Following", icon: "heart" },
+    { id: "cart", label: "Cart", icon: "cart", fab: true },
+    { id: "orders", label: "Orders", icon: "orders" },
+    { id: "profile", label: "Profile", icon: "profile" },
   ];
 
   return (
-    <nav className="bottom-nav-v2">
-      {/* Left tabs */}
-      {left.map(tab => (
-        <button
-          key={tab.id}
-          className={`bnv2-tab ${screen === tab.id ? "active" : ""}`}
-          onClick={() => navigate(tab.id)}
-        >
-          {tab.icon(screen === tab.id)}
-          <span>{tab.label}</span>
-        </button>
-      ))}
+    <nav className="bottom-nav-v2" aria-label="Primary navigation">
+      {tabs.map((tab) => {
+        if (tab.fab) {
+          return (
+            <button
+              key={tab.id}
+              className="bnv2-fab"
+              onClick={() => navigate("cart")}
+              aria-label="Open cart"
+            >
+              <span className="bnv2-fab-icon">
+                <Icon name={tab.icon} size={24} />
+              </span>
 
-      {/* Centre FAB */}
-      <div className="bnv2-fab-wrap">
-        <button className="bnv2-fab" onClick={() => navigate("cart")}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-          </svg>
-          {count > 0 && <span className="bnv2-fab-badge">{count}</span>}
-        </button>
-      </div>
+              {count > 0 && <span className="bnv2-fab-badge">{count}</span>}
+            </button>
+          );
+        }
 
-      {/* Right tabs */}
-      {right.map(tab => (
-        <button
-          key={tab.id}
-          className={`bnv2-tab ${screen === tab.id ? "active" : ""}`}
-          onClick={() => navigate(tab.id)}
-        >
-          {tab.icon(screen === tab.id)}
-          <span>{tab.label}</span>
-        </button>
-      ))}
+        return (
+          <button
+            key={tab.id}
+            onClick={() => navigate(tab.id)}
+            className={`bnv2-tab ${screen === tab.id ? "active" : ""}`}
+            aria-label={tab.label}
+            aria-current={screen === tab.id ? "page" : undefined}
+          >
+            <span className="bnv2-icon">
+              <Icon name={tab.icon} size={21} />
+            </span>
+
+            <span className="bnv2-label">{tab.label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }

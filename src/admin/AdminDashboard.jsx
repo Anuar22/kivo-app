@@ -258,6 +258,11 @@ export default function AdminDashboard({ showToast }) {
             <div className="online-dot" />{user?.name || "Admin"}
           </button>
         </div>
+        <div className="dashboard-surface" style={{ marginBottom: 12 }}>
+          <div className="label">Operations overview</div>
+          <div className="title">Keep the marketplace healthy</div>
+          <div className="copy">Review vendors, manage user access, and monitor platform activity from one clean dashboard.</div>
+        </div>
         <div className="vd-tabs">
           {tabs.map(t => (
             <button

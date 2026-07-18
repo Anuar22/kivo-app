@@ -42,10 +42,10 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
   const debounceRef  = useRef(null);
   const [query,     setQuery]     = useState(initialAddress || "");
   const [results,   setResults]   = useState([]);
-  const [coords,    setCoords]    = useState(null);
-  const [addrLine,  setAddrLine]  = useState(initialAddress || "");
+  const [coords,     setCoords]    = useState(null);
+  const [addrLine,   setAddrLine]  = useState(initialAddress || "");
   const [searching, setSearching] = useState(false);
-  const [mapReady,  setMapReady]  = useState(false);
+  const [mapReady,   setMapReady]  = useState(false);
 
   useEffect(() => {
     if (!MAPBOX_TOKEN) return;
@@ -53,7 +53,7 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
     loadMapbox().then(mapboxgl => {
       if (!mounted || !containerRef.current || mapRef.current) return;
       mapboxgl.accessToken = MAPBOX_TOKEN;
-      const map = new mapboxgl.Map({ container: containerRef.current, style: "mapbox://styles/mapbox/streets-v12", center: [36.817, -1.286], zoom: 13 });
+      const map = new mapboxgl.Map({ container: containerRef.current, style: "mapbox://styles/mapbox/dark-v11", center: [36.817, -1.286], zoom: 13 });
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
       const marker = new mapboxgl.Marker({ color: "#e53935", draggable: true }).setLngLat([36.817, -1.286]).addTo(map);
 
@@ -113,24 +113,24 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
 
   if (!MAPBOX_TOKEN) return (
     <div>
-      <input className="pv2-input" placeholder="Enter delivery address…" value={query} onChange={e => setQuery(e.target.value)} style={{ marginBottom: 12 }} autoFocus />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => onConfirm({ address: query, lat: null, lng: null })} style={{ flex: 1, background: "#e53935", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Use this address</button>
-        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>Cancel</button>
+      <input className="pv2-input" placeholder="Enter delivery address…" value={query} onChange={e => setQuery(e.target.value)} style={{ marginBottom: "12px", background: "#1a1a1a", border: "1px solid #222", color: "#fff" }} autoFocus />
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button onClick={() => onConfirm({ address: query, lat: null, lng: null })} style={{ flex: 1, background: "#e53935", border: "none", borderRadius: "12px", padding: "13px", color: "white", fontWeight: 700, fontSize: "14px", fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Use this address</button>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #222", borderRadius: "12px", padding: "13px 16px", fontSize: "13px", color: "#a0a0a0", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>Cancel</button>
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <div style={{ position: "relative" }}>
-        <input className="pv2-input" placeholder="Search your delivery address…" value={query} onChange={e => search(e.target.value)} style={{ paddingRight: 36 }} autoFocus />
-        {searching && <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)" }}>⏳</span>}
+        <input className="pv2-input" placeholder="Search your delivery address…" value={query} onChange={e => search(e.target.value)} style={{ paddingRight: "36px", background: "#1a1a1a", border: "1px solid #222", color: "#fff" }} autoFocus />
+        {searching && <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)" }}>⏳</span>}
         {results.length > 0 && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "white", borderRadius: 12, boxShadow: "0 4px 20px rgba(0,0,0,0.12)", zIndex: 10, overflow: "hidden", border: "1px solid #e8e4df" }}>
+          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#121212", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.4)", zIndex: 10, overflow: "hidden", border: "1px solid #222" }}>
             {results.map(f => (
-              <button key={f.id} onClick={() => selectResult(f)} style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "11px 14px", fontSize: 13, color: "#0f0f0f", cursor: "pointer", fontFamily: "DM Sans,sans-serif", borderBottom: "1px solid #f0ede9", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+              <button key={f.id} onClick={() => selectResult(f)} style={{ width: "100%", textAlign: "left", background: "none", border: "none", padding: "11px 14px", fontSize: "13px", color: "#ffffff", cursor: "pointer", fontFamily: "DM Sans,sans-serif", borderBottom: "1px solid #222", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <span style={{ flexShrink: 0, marginTop: "1px" }}>📍</span>
                 <span style={{ lineHeight: 1.4 }}>{f.place_name}</span>
               </button>
             ))}
@@ -138,22 +138,22 @@ function AddressPicker({ initialAddress, onConfirm, onCancel }) {
         )}
       </div>
       <div style={{ position: "relative" }}>
-        <div ref={containerRef} style={{ height: 220, borderRadius: 14, overflow: "hidden", border: "1.5px solid #e8e4df" }} />
-        {!mapReady && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f7f5f2", borderRadius: 14, fontSize: 13, color: "#b0a89f" }}>Loading map…</div>}
+        <div ref={containerRef} style={{ height: "220px", borderRadius: "14px", overflow: "hidden", border: "1.5px solid #222" }} />
+        {!mapReady && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#000000", borderRadius: "14px", fontSize: "13px", color: "#a0a0a0" }}>Loading map…</div>}
       </div>
-      <p style={{ fontSize: 12, color: "#7a7065", margin: 0 }}>🗺️ Tap the map or drag the pin to fine-tune your location</p>
+      <p style={{ fontSize: "12px", color: "#a0a0a0", margin: 0 }}>🗺️ Tap the map or drag the pin to fine-tune your location</p>
       {addrLine && (
-        <div style={{ background: "#f7f5f2", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#0f0f0f", display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <div style={{ background: "#1a1a1a", border: "1px solid #222", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", color: "#ffffff", display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <span style={{ flexShrink: 0 }}>📍</span>
           <span style={{ lineHeight: 1.5 }}>{addrLine}</span>
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+      <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
         <button onClick={() => coords && addrLine && onConfirm({ address: addrLine, lat: coords.lat, lng: coords.lng })} disabled={!coords || !addrLine.trim()}
-          style={{ flex: 1, background: (!coords || !addrLine.trim()) ? "#e8e4df" : "#e53935", border: "none", borderRadius: 12, padding: 13, color: (!coords || !addrLine.trim()) ? "#b0a89f" : "white", fontWeight: 700, fontSize: 14, cursor: (!coords || !addrLine.trim()) ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
+          style={{ flex: 1, background: (!coords || !addrLine.trim()) ? "#222" : "#e53935", border: "none", borderRadius: "12px", padding: "13px", color: (!coords || !addrLine.trim()) ? "#555" : "white", fontWeight: 700, fontSize: "14px", cursor: (!coords || !addrLine.trim()) ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
           Confirm Location
         </button>
-        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Cancel</button>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #222", borderRadius: "12px", padding: "13px 16px", fontSize: "13px", color: "#a0a0a0", fontFamily: "DM Sans,sans-serif", cursor: "pointer" }}>Cancel</button>
       </div>
     </div>
   );
@@ -168,7 +168,7 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
     loadStripeJs().then(Stripe => {
       if (!mounted || !cardRef.current) return;
       const stripe = Stripe(PUBLISHABLE_KEY); const elements = stripe.elements();
-      const card = elements.create("card", { style: { base: { fontSize: "15px", fontFamily: "'DM Sans', sans-serif", color: "#0f0f0f", "::placeholder": { color: "#b0a89f" } }, invalid: { color: "#ef4444" } }, hidePostalCode: true });
+      const card = elements.create("card", { style: { base: { fontSize: "15px", fontFamily: "'DM Sans', sans-serif", color: "#ffffff", "::placeholder": { color: "#666666" } }, invalid: { color: "#ef4444" } }, hidePostalCode: true });
       card.mount(cardRef.current);
       card.on("ready", () => { if (mounted) setReady(true); });
       card.on("change", e => { if (mounted) setError(e.error?.message || ""); });
@@ -187,15 +187,15 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
     } catch (e) { setError(e.message); setPaying(false); }
   };
   return (
-    <div style={{ marginTop: 8 }}>
-      <div ref={cardRef} style={{ border: "1.5px solid #e8e4df", borderRadius: 12, padding: 14, background: "#fafaf9", minHeight: 46 }} />
-      {!ready && !error && <p style={{ fontSize: 12, color: "#b0a89f", marginTop: 6 }}>Loading card form…</p>}
-      {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 6 }}>{error}</p>}
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <button onClick={pay} disabled={paying || !ready} style={{ flex: 1, background: paying ? "#b0a89f" : "#0f0f0f", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, fontFamily: "'DM Sans',sans-serif", cursor: paying ? "not-allowed" : "pointer" }}>
+    <div style={{ marginTop: "8px" }}>
+      <div ref={cardRef} style={{ border: "1.5px solid #222", borderRadius: "12px", padding: "14px", background: "#161616", minHeight: "46px" }} />
+      {!ready && !error && <p style={{ fontSize: "12px", color: "#a0a0a0", marginTop: "6px" }}>Loading card form…</p>}
+      {error && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "6px" }}>{error}</p>}
+      <div style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+        <button onClick={pay} disabled={paying || !ready} style={{ flex: 1, background: paying ? "#222" : "#e53935", border: "none", borderRadius: "12px", padding: "13px", color: "white", fontWeight: 700, fontSize: "14px", fontFamily: "'DM Sans',sans-serif", cursor: paying ? "not-allowed" : "pointer" }}>
           {paying ? "Processing…" : `Pay ${Math.round(amount).toLocaleString()} TSh`}
         </button>
-        <button onClick={onCancel} disabled={paying} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
+        <button onClick={onCancel} disabled={paying} style={{ background: "none", border: "1.5px solid #222", borderRadius: "12px", padding: "13px 16px", fontSize: "13px", color: "#a0a0a0", fontFamily: "'DM Sans',sans-serif", cursor: "pointer" }}>Cancel</button>
       </div>
     </div>
   );
@@ -205,7 +205,7 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
 function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, defaultPhone }) {
   const [phone,    setPhone]    = useState(defaultPhone || "");
   const [status,   setStatus]   = useState("idle"); 
-  const [message,  setMessage]  = useState("");
+  const [message,   setMessage]  = useState("");
   const [error,    setError]    = useState("");
   const pollRef = useRef(null);
 
@@ -246,17 +246,17 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
 
   if (status === "waiting" || status === "done") return (
     <div style={{ textAlign: "center", padding: "20px 0" }}>
-      <div style={{ fontSize: 48, marginBottom: 12 }}>{status === "done" ? "✅" : "📱"}</div>
-      <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{status === "done" ? "Payment confirmed!" : "Waiting for payment…"}</p>
-      <p style={{ fontSize: 13, color: "#7a7065", lineHeight: 1.6, marginBottom: 16 }}>{message}</p>
+      <div style={{ fontSize: "48px", marginBottom: "12px" }}>{status === "done" ? "✅" : "📱"}</div>
+      <p style={{ fontWeight: 700, fontSize: "15px", marginBottom: "8px", color: "#fff" }}>{status === "done" ? "Payment confirmed!" : "Waiting for payment…"}</p>
+      <p style={{ fontSize: "13px", color: "#a0a0a0", lineHeight: 1.6, marginBottom: "16px" }}>{message}</p>
       {status === "waiting" && (
         <>
-          <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: "6px", justifyContent: "center", marginBottom: "16px" }}>
             {[0,1,2].map(i => (
-              <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "#e53935", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+              <div key={i} style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#e53935", animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
             ))}
           </div>
-          <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "10px 20px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
+          <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #222", borderRadius: "12px", padding: "10px 20px", fontSize: "13px", color: "#a0a0a0", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
             Cancel
           </button>
         </>
@@ -265,35 +265,35 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
   );
 
   return (
-    <div style={{ marginTop: 8 }}>
-      <p style={{ fontSize: 13, color: "#7a7065", marginBottom: 12, lineHeight: 1.6 }}>
+    <div style={{ marginTop: "8px" }}>
+      <p style={{ fontSize: "13px", color: "#a0a0a0", marginBottom: "12px", lineHeight: 1.6 }}>
         Enter your mobile money number (M-Pesa, Tigo, Airtel, Halo). You'll receive a prompt to enter your PIN.
       </p>
-      <div style={{ position: "relative", marginBottom: 8 }}>
-        <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#7a7065", pointerEvents: "none" }}>📱</span>
+      <div style={{ position: "relative", marginBottom: "8px" }}>
+        <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "13px", color: "#a0a0a0", pointerEvents: "none" }}>📱</span>
         <input
           className="form-input"
           type="tel"
           value={phone}
           onChange={e => { setPhone(e.target.value); setError(""); }}
-          placeholder="e.g. 0712 345 678 or +255712345678"
-          style={{ paddingLeft: 36 }}
+          placeholder="e.g. 0712 345 678"
+          style={{ paddingLeft: "36px", background: "#1a1a1a", border: "1px solid #222", color: "#fff" }}
         />
       </div>
-      {error && <p style={{ fontSize: 12, color: "#ef4444", marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ fontSize: "12px", color: "#ef4444", marginBottom: "8px" }}>{error}</p>}
       {status === "failed" && (
-        <p style={{ fontSize: 12, color: "#ef4444", marginBottom: 8 }}>{error || "Payment failed. Try again."}</p>
+        <p style={{ fontSize: "12px", color: "#ef4444", marginBottom: "8px" }}>{error || "Payment failed. Try again."}</p>
       )}
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+      <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
         <button onClick={startPush} disabled={status === "pushing"}
-          style={{ flex: 1, background: status === "pushing" ? "#b0a89f" : "#e53935", border: "none", borderRadius: 12, padding: 13, color: "white", fontWeight: 700, fontSize: 14, cursor: status === "pushing" ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
+          style={{ flex: 1, background: status === "pushing" ? "#222" : "#e53935", border: "none", borderRadius: "12px", padding: "13px", color: "white", fontWeight: 700, fontSize: "14px", cursor: status === "pushing" ? "not-allowed" : "pointer", fontFamily: "DM Sans,sans-serif" }}>
           {status === "pushing" ? "Sending…" : `Pay TZS ${Math.round(amount).toLocaleString()}`}
         </button>
-        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #e8e4df", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#7a7065", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
+        <button onClick={onCancel} style={{ background: "none", border: "1.5px solid #222", borderRadius: "12px", padding: "13px 16px", fontSize: "13px", color: "#a0a0a0", cursor: "pointer", fontFamily: "DM Sans,sans-serif" }}>
           Cancel
         </button>
       </div>
-      <p style={{ fontSize: 11, color: "#b0a89f", marginTop: 10, textAlign: "center", lineHeight: 1.5 }}>
+      <p style={{ fontSize: "11px", color: "#666", marginTop: "10px", textAlign: "center", lineHeight: 1.5 }}>
         🔒 Powered by ClickPesa · Supports M-Pesa, Tigo, Airtel & Halopesa
       </p>
     </div>
@@ -304,7 +304,7 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
 const PAY_METHODS = [
   { id: "cash",   label: "Cash on Delivery",detail: "Pay when your order arrives",   emoji: "💵" },
   { id: "mobile", label: "Mobile Money",    detail: "M-Pesa · Tigo · Airtel · Halo", emoji: "📱" },
-  { id: "card",   label: "Card",            detail: "Visa or Mastercard",            render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa">VISA</span></div> },
+  { id: "card",   label: "Card",            detail: "Visa or Mastercard",            render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa" style={{ color: "#2563eb" }}>VISA</span></div> },
 ];
 
 // ── Main Cart ─────────────────────────────────────────────────────────────────
@@ -320,10 +320,9 @@ export default function Cart({ navigate }) {
   const [showMobileForm, setShowMobileForm]  = useState(false);
   const [pendingOrder,   setPendingOrder]    = useState(null); 
   const [placed,         setPlaced]          = useState(false);
-  const [loading,        setLoading]         = useState(false);
+  const [loading,         setLoading]         = useState(false);
   const [error,          setError]           = useState("");
 
-  // VAT (Tax) has been completely removed. Delivery fee is conditionally active.
   const deliveryFee     = (fulfillment === "delivery" && items.length > 0) ? 2000 : 0; 
   const grandTotal      = total + deliveryFee;
   const stripeAvailable = !!PUBLISHABLE_KEY;
@@ -391,46 +390,117 @@ export default function Cart({ navigate }) {
   const closeSuccess = () => { clearCart(); navigate("orders"); };
 
   if (items.length === 0 && !placed) return (
-    <div className="page cart-page">
-      <div className="empty-cart">
-        <span className="empty-cart-icon">🛒</span>
-        <h3>Your cart is empty</h3>
-        <p>Add some delicious food to get started</p>
-        <button className="btn-primary" onClick={() => navigate("home")} style={{ width: "auto", padding: "14px 32px" }}>Browse Restaurants</button>
+    <div className="page cart-page" style={{ background: "#000000", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="empty-cart" style={{ textAlign: "center", color: "#fff" }}>
+        <span className="empty-cart-icon" style={{ fontSize: "60px", marginBottom: "16px", display: "block" }}>🛒</span>
+        <h3 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px" }}>Your cart is empty</h3>
+        <p style={{ color: "#a0a0a0", fontSize: "14px", margin: "0 0 24px" }}>Add some delicious food to get started</p>
+        <button className="btn-primary" onClick={() => navigate("home")} style={{ width: "auto", padding: "14px 32px", background: "linear-gradient(135deg, #e53935, #b71c1c)", border: "none", borderRadius: "14px", color: "#fff", fontWeight: "700", cursor: "pointer" }}>Browse Restaurants</button>
       </div>
     </div>
   );
 
   return (
-    <div className="cart-v2">
-      <div style={{ padding: "0 20px 200px" }}>
-        <div className="cart-vendor-label"><span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong></div>
+    <div 
+      className="cart-v2" 
+      style={{ 
+        background: "#000000", 
+        minHeight: "100vh", 
+        color: "#ffffff", 
+        padding: "0 16px 120px",
+        /* Neutralizes the global main-content top padding on mobile */
+        marginTop: "calc(-1 * (var(--nav-h) + var(--sat)))",
+        paddingTop: "calc(var(--sat) + 12px)"
+      }}
+    >
+      <div>
+       {/* ── PREMIUM MY CART TOPBAR ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          
+          {/* Symmetrical Left Spacer (Keeps title perfectly centered since arrow is gone) */}
+          <div style={{ width: "42px", height: "42px" }} />
 
+          {/* Clean "My Cart" Title (Center) */}
+          <h1 style={{ 
+            fontFamily: "var(--font-heading)", 
+            fontSize: "20px", 
+            fontWeight: "800", 
+            margin: 0, 
+            color: "#ffffff",
+            letterSpacing: "-0.3px"
+          }}>
+            Cart
+          </h1>
+
+          {/* Home Button with Reddish Fill (Right) */}
+          <button 
+            onClick={() => navigate("home")} 
+            style={{ 
+              width: "42px", 
+              height: "42px", 
+              borderRadius: "50%", 
+              background: "#1a1a1a", 
+              border: "1px solid #222", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+              color: "#e53935" /* Red accent line color */
+            }}
+            aria-label="Go to Home"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="rgba(229, 57, 53, 0.2)" stroke="currentColor" strokeWidth="2.5">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Ordering From Merchant Label */}
+        <div 
+          className="cart-vendor-label" 
+          style={{ 
+            background: "rgba(229,57,53,0.12)", 
+            border: "1px solid rgba(229,57,53,0.2)", 
+            borderRadius: 12, 
+            padding: "20px 14px", 
+            fontSize: "13px", 
+            display: "flex", 
+            alignItems: "center", 
+            gap: "8px", 
+            marginBottom: "16px", 
+            marginTop: "12px", 
+            color: "#ffffff" 
+          }}
+        >
+          <span>🏪</span> Ordering from <strong>&nbsp;{vendorName}</strong>
+        </div>
         {/* Items */}
-        <div className="cart-items">
+        <div className="cart-items" style={{ background: "#121212", borderRadius: 14, overflow: "hidden", border: "1px solid #222", marginBottom: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
           {items.map(item => (
-            <div key={item.id} className="cart-item">
-              <div className="cart-item-emoji">{item.image}</div>
-              <div className="cart-item-info">
-                <p className="cart-item-name">{item.name}</p>
-                <p className="cart-item-price">{(item.price * item.qty).toLocaleString()} TSh</p>
+            <div key={item.id} className="cart-item" style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", borderBottom: "1px solid #222" }}>
+              <div className="cart-item-emoji" style={{ fontSize: "32px" }}>{item.image}</div>
+              <div className="cart-item-info" style={{ flex: 1 }}>
+                <p className="cart-item-name" style={{ fontWeight: 600, fontSize: "14px", margin: "0 0 3px", color: "#fff" }}>{item.name}</p>
+                <p className="cart-item-price" style={{ fontSize: "13px", color: "#e53935", fontWeight: 600, margin: 0 }}>{(item.price * item.qty).toLocaleString()} TSh</p>
               </div>
-              <div className="qty-control">
-                <button onClick={() => removeItem(item.id)}>−</button>
-                <span>{item.qty}</span>
-                <button onClick={() => addItem(item, { id: vendorId, name: vendorName })}>+</button>
+              <div className="qty-control" style={{ display: "flex", alignItems: "center", gap: "10px", background: "#000000", borderRadius: 10, padding: "6px 10px", border: "1px solid #222" }}>
+                <button onClick={() => removeItem(item.id)} style={{ background: "none", border: "none", color: "white", fontSize: "16px", cursor: "pointer" }}>−</button>
+                <span style={{ color: "white", fontWeight: 700 }}>{item.qty}</span>
+                <button onClick={() => addItem(item, { id: vendorId, name: vendorName })} style={{ background: "none", border: "none", color: "white", fontSize: "16px", cursor: "pointer" }}>+</button>
               </div>
             </div>
           ))}
         </div>
 
         {/* New Fulfillment Option Segment */}
-        <p className="cv2-section-title">📦 Order Method</p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 18, background: "#f1eee9", padding: 4, borderRadius: 12 }}>
-          <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "delivery" ? "#white" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "delivery" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
+        <p className="cv2-section-title" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "14px", color: "#ffffff", margin: "24px 0 10px" }}>📦 Order Method</p>
+        <div style={{ display: "flex", gap: "8px", marginBottom: "18px", background: "#121212", padding: "4px", borderRadius: 12, border: "1px solid #222" }}>
+          <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "delivery" ? "#e53935" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.3)" : "none", color: fulfillment === "delivery" ? "#ffffff" : "#a0a0a0", transition: "0.2s" }}>
             🛵 Delivery
           </button>
-          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#white" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.06)" : "none", color: fulfillment === "pickup" ? "#e53935" : "#7a7065", transition: "0.2s" }}>
+          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#e53935" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.3)" : "none", color: fulfillment === "pickup" ? "#ffffff" : "#a0a0a0", transition: "0.2s" }}>
             🛍️ Self Pick-Up
           </button>
         </div>
@@ -438,9 +508,9 @@ export default function Cart({ navigate }) {
         {/* Conditional Address Selection based on Option selection */}
         {fulfillment === "delivery" && (
           <>
-            <p className="cv2-section-title">📍 Delivery Address</p>
+            <p className="cv2-section-title" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "14px", color: "#ffffff", margin: "24px 0 10px" }}>📍 Delivery Address</p>
             {showPicker ? (
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: "20px" }}>
                 <AddressPicker
                   initialAddress={delivery.address}
                   onConfirm={({ address, lat, lng }) => { setDelivery({ address, lat, lng }); setShowPicker(false); }}
@@ -449,68 +519,68 @@ export default function Cart({ navigate }) {
               </div>
             ) : (
               <button onClick={() => setShowPicker(true)}
-                style={{ width: "100%", textAlign: "left", background: delivery.address ? "#f7f5f2" : "#fff", border: `1.5px solid ${delivery.address ? "#e8e4df" : "#e53935"}`, borderRadius: 12, padding: "13px 14px", marginBottom: 20, fontFamily: "DM Sans,sans-serif", fontSize: 13, color: delivery.address ? "#0f0f0f" : "#b0a89f", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <span style={{ flexShrink: 0, marginTop: 1 }}>📍</span>
+                style={{ width: "100%", textAlign: "left", background: "#121212", border: `1.5px solid ${delivery.address ? "#222" : "#e53935"}`, borderRadius: 12, padding: "13px 14px", marginBottom: "20px", fontFamily: "DM Sans,sans-serif", fontSize: "13px", color: delivery.address ? "#ffffff" : "#666", cursor: "pointer", display: "flex", alignItems: "flex-start", gap: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                <span style={{ flexShrink: 0, marginTop: "1px" }}>📍</span>
                 <span style={{ lineHeight: 1.5, flex: 1 }}>{delivery.address || "Tap to set your delivery location on the map…"}</span>
-                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 12, color: "#e53935", fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
+                <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: "12px", color: "#e53935", fontWeight: 600 }}>{delivery.address ? "Change" : "Set"}</span>
               </button>
             )}
           </>
         )}
 
         {fulfillment === "pickup" && (
-          <div style={{ padding: "14px", background: "#f7f5f2", borderRadius: 12, border: "1.5px dashed #e8e4df", marginBottom: 20, fontSize: 13, color: "#7a7065", lineHeight: 1.5 }}>
-            🏪 Collect your package directly from <strong>{vendorName}</strong>. We'll update your feed with status changes when your kitchen flags it ready.
+          <div style={{ padding: "14px", background: "#121212", borderRadius: 12, border: "1.5px dashed #222", marginBottom: "20px", fontSize: "13px", color: "#a0a0a0", lineHeight: 1.5 }}>
+            🏪 Collect your package directly from <strong style={{ color: "#fff" }}>{vendorName}</strong>. We'll update your feed with status changes when your kitchen flags it ready.
           </div>
         )}
 
         {/* Summary */}
-        <p className="cv2-section-title">Order summary</p>
-        <div className="cv2-summary">
-          <div className="cv2-summary-row"><span>Subtotal</span><span>{total.toLocaleString()} TSh</span></div>
+        <p className="cv2-section-title" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "14px", color: "#ffffff", margin: "24px 0 10px" }}>Order summary</p>
+        <div className="cv2-summary" style={{ background: "#121212", border: "1.5px solid #222", borderRadius: 14, padding: "14px 16px" }}>
+          <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#a0a0a0", padding: "5px 0" }}><span>Subtotal</span><span style={{ color: "#fff" }}>{total.toLocaleString()} TSh</span></div>
           {fulfillment === "delivery" && (
-            <div className="cv2-summary-row"><span>Delivery fee</span><span>{deliveryFee.toLocaleString()} TSh</span></div>
+            <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#a0a0a0", padding: "5px 0" }}><span>Delivery fee</span><span style={{ color: "#fff" }}>{deliveryFee.toLocaleString()} TSh</span></div>
           )}
           {fulfillment === "pickup" && (
-            <div className="cv2-summary-row"><span>Delivery fee</span><span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span></div>
+            <div className="cv2-summary-row" style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", color: "#a0a0a0", padding: "5px 0" }}><span>Delivery fee</span><span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span></div>
           )}
-          <div className="cv2-summary-divider" />
-          <div className="cv2-summary-row cv2-summary-total"><span>Total</span><span>{grandTotal.toLocaleString()} TSh</span></div>
+          <div className="cv2-summary-divider" style={{ height: "1px", background: "#222", margin: "6px 0" }} />
+          <div className="cv2-summary-row cv2-summary-total" style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "16px", color: "#ffffff", paddingTop: "6px" }}><span>Total</span><span style={{ color: "#e53935" }}>{grandTotal.toLocaleString()} TSh</span></div>
         </div>
 
         {/* Payment methods */}
-        <p className="cv2-section-title">Payment methods</p>
-        <div className="cv2-pay-list">
+        <p className="cv2-section-title" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, fontSize: "14px", color: "#ffffff", margin: "24px 0 10px" }}>Payment methods</p>
+        <div className="cv2-pay-list" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {PAY_METHODS.map(pm => (
-            <button key={pm.id} className={`cv2-pay-opt ${payMethod === pm.id ? "active" : ""}`} onClick={() => setPayMethod(pm.id)}>
-              <div className="cv2-pay-icon">{pm.render ? pm.render() : pm.emoji}</div>
-              <div className="cv2-pay-text">
-                <span className="cv2-pay-label">{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
-                <span className="cv2-pay-detail">{pm.detail}</span>
+            <button key={pm.id} className={`cv2-pay-opt ${payMethod === pm.id ? "active" : ""}`} onClick={() => setPayMethod(pm.id)} style={{ display: "flex", alignItems: "center", gap: "12px", background: payMethod === pm.id ? "rgba(229,57,53,0.12)" : "#121212", border: payMethod === pm.id ? "1.5px solid #e53935" : "1.5px solid #222", borderRadius: "14px", padding: "12px 14px", cursor: "pointer", width: "100%" }}>
+              <div className="cv2-pay-icon" style={{ width: "38px", height: "38px", borderRadius: "10px", background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", flexShrink: 0 }}>{pm.render ? pm.render() : pm.emoji}</div>
+              <div className="cv2-pay-text" style={{ flex: 1, display: "flex", flexDirection: "column", textAlign: "left" }}>
+                <span className="cv2-pay-label" style={{ fontSize: "13px", fontWeight: 700, color: "#ffffff" }}>{pm.label}{pm.id === "card" && !stripeAvailable ? " (setup required)" : ""}</span>
+                <span className="cv2-pay-detail" style={{ fontSize: "11px", color: "#a0a0a0", marginTop: "1px" }}>{pm.detail}</span>
               </div>
-              <div className={`cv2-radio ${payMethod === pm.id ? "checked" : ""}`} />
+              <div className={`cv2-radio ${payMethod === pm.id ? "checked" : ""}`} style={{ width: "18px", height: "18px", borderRadius: "50%", border: "2px solid #333", flexShrink: 0, position: "relative", background: payMethod === pm.id ? "#e53935" : "transparent" }} />
             </button>
           ))}
         </div>
 
         {/* Stripe form */}
         {payMethod === "card" && stripeAvailable && showCardForm && (
-          <div style={{ marginTop: 14, background: "#fafaf9", border: "1.5px solid #f0f0f0", borderRadius: 14, padding: "16px 14px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Enter card details</p>
+          <div style={{ marginTop: "14px", background: "#121212", border: "1.5px solid #222", borderRadius: 14, padding: "16px 14px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "10px", color: "#fff" }}>Enter card details</p>
             <StripeCardForm amount={grandTotal} onSuccess={handleStripeSuccess} onCancel={() => setShowCardForm(false)} />
           </div>
         )}
 
         {payMethod === "card" && !stripeAvailable && (
-          <div style={{ marginTop: 10, padding: "10px 14px", background: "#fff8f5", border: "1.5px solid #ffe8da", borderRadius: 10, fontSize: 12, color: "#7a7065", lineHeight: 1.6 }}>
-            💡 Card payments need <code style={{ background: "#f0ede9", borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> configured.
+          <div style={{ marginTop: "10px", padding: "10px 14px", background: "rgba(229,57,53,0.08)", border: "1.5px solid #3a1515", borderRadius: 10, fontSize: "12px", color: "#a0a0a0", lineHeight: 1.6 }}>
+            💡 Card payments need <code style={{ background: "#222", color: "#fff", borderRadius: 4, padding: "1px 5px" }}>VITE_STRIPE_PUBLISHABLE_KEY</code> configured.
           </div>
         )}
 
         {/* ClickPesa mobile money form */}
         {payMethod === "mobile" && showMobileForm && pendingOrder && (
-          <div style={{ marginTop: 14, background: "#fafaf9", border: "1.5px solid #f0f0f0", borderRadius: 14, padding: "16px 14px" }}>
-            <p style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Mobile Money Payment</p>
+          <div style={{ marginTop: "14px", background: "#121212", border: "1.5px solid #222", borderRadius: 14, padding: "16px 14px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "10px", color: "#fff" }}>Mobile Money Payment</p>
             <ClickPesaForm
               amount={grandTotal}
               orderId={pendingOrder.id}
@@ -523,7 +593,7 @@ export default function Cart({ navigate }) {
         )}
 
         {error && (
-          <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 14px", marginTop: 14, fontSize: 13, color: "#991b1b" }}>
+          <div style={{ background: "#3a1515", border: "1px solid #ef4444", borderRadius: 10, padding: "10px 14px", marginTop: "14px", fontSize: "13px", color: "#fca5a5" }}>
             {error}
           </div>
         )}
@@ -531,12 +601,12 @@ export default function Cart({ navigate }) {
 
       {/* Bottom bar */}
       {!showCardForm && !showMobileForm && !showPicker && (
-        <div className="cv2-bottom-bar">
-          <div className="cv2-bottom-total">
-            <span className="cv2-bottom-total-label">Total amt</span>
-            <span className="cv2-bottom-total-amount">{grandTotal.toLocaleString()} TSh</span>
+        <div className="cv2-bottom-bar" style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: "420px", boxSizing: "border-box", background: "#121212", borderTop: "1px solid #222", padding: "14px 20px calc(14px + env(safe-area-inset-bottom))", display: "flex", alignItems: "center", gap: "14px", boxShadow: "0 -4px 20px rgba(0,0,0,0.5)", zIndex: 90 }}>
+          <div className="cv2-bottom-total" style={{ display: "flex", flexDirection: "column" }}>
+            <span className="cv2-bottom-total-label" style={{ fontSize: "11px", color: "#a0a0a0" }}>Total amt</span>
+            <span className="cv2-bottom-total-amount" style={{ fontFamily: "var(--font-heading)", fontWeight: 800, fontSize: "18px", color: "#ffffff" }}>{grandTotal.toLocaleString()} TSh</span>
           </div>
-          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || (fulfillment === "delivery" && !delivery.address)}>
+          <button className="cv2-pay-btn" onClick={placeOrder} disabled={loading || (fulfillment === "delivery" && !delivery.address)} style={{ flex: 1, background: "#e53935", border: "none", borderRadius: 14, padding: "15px", color: "white", fontWeight: 700, fontSize: "15px", fontFamily: "var(--font-body)", cursor: (loading || (fulfillment === "delivery" && !delivery.address)) ? "not-allowed" : "pointer", boxShadow: "0 4px 16px rgba(229,57,53,0.3)" }}>
             {loading ? "Placing…" : "Pay Now"}
           </button>
         </div>

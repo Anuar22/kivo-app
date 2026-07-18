@@ -78,23 +78,21 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
 
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      // Center on customer location or first vendor with coords, or Dar es Salaam
       const defaultCenter = customerCoords
         ? [customerCoords.lng, customerCoords.lat]
         : vendors.find(v => v.latitude)
           ? [Number(vendors.find(v => v.latitude).longitude), Number(vendors.find(v => v.latitude).latitude)]
-          : [39.2083, -6.7924]; // Dar es Salaam
+          : [39.2083, -6.7924];
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
-        style: "mapbox://styles/mapbox/streets-v12",
+        style: "mapbox://styles/mapbox/dark-v11",
         center: defaultCenter,
         zoom: customerCoords ? 14 : 12,
       });
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
-      // Customer "You are here" blue pulsing dot
       if (customerCoords) {
         const el = document.createElement("div");
         el.style.cssText = `
@@ -107,7 +105,6 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
           .addTo(map);
       }
 
-      // Vendor pins
       vendors.forEach(v => {
         if (!v.latitude || !v.longitude) return;
         const lat = Number(v.latitude);
@@ -115,25 +112,14 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
 
         const el = document.createElement("div");
         el.style.cssText = `
-          background: white;
-          border: 2.5px solid #e53935;
-          border-radius: 12px;
-          padding: 5px 10px;
-          font-size: 13px;
-          font-weight: 700;
-          font-family: DM Sans, sans-serif;
-          white-space: nowrap;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.18);
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          cursor: pointer;
-          max-width: 140px;
-          transition: transform 0.15s;
+          background: #1a1a1a; border: 2.5px solid #e53935; border-radius: 12px;
+          padding: 5px 10px; font-size: 13px; font-weight: 700; font-family: DM Sans, sans-serif;
+          white-space: nowrap; box-shadow: 0 3px 12px rgba(0,0,0,0.4); display: flex;
+          align-items: center; gap: 5px; cursor: pointer; max-width: 140px; transition: transform 0.15s;
         `;
         el.innerHTML = `
           <span style="font-size:16px">${v.image || "🍽️"}</span>
-          <span style="color:#0f0f0f;overflow:hidden;text-overflow:ellipsis">${v.name}</span>
+          <span style="color:#ffffff;overflow:hidden;text-overflow:ellipsis">${v.name}</span>
         `;
         el.addEventListener("mouseenter", () => { el.style.transform = "scale(1.05)"; });
         el.addEventListener("mouseleave", () => { el.style.transform = "scale(1)"; });
@@ -172,110 +158,43 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
   const mappableCount = vendors.filter(v => v.latitude).length;
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 300,
-      display: "flex", flexDirection: "column",
-      background: "#f7f5f2",
-    }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", flexDirection: "column", background: "#000000" }}>
       {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 20px",
-        background: "white",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-        zIndex: 1,
-      }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "#121212", borderBottom: "1px solid #222" }}>
         <div>
-          <p style={{ fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "Georgia,serif" }}>
-            🗺️ Restaurants Near You
-          </p>
-          <p style={{ fontSize: 12, color: "#7a7065", margin: "2px 0 0" }}>
-            {mappableCount === 0
-              ? "No restaurants have set their location yet"
-              : `${mappableCount} restaurant${mappableCount !== 1 ? "s" : ""} on the map`}
+          <p style={{ fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "Georgia,serif", color: "#ffffff" }}>🗺️ Restaurants Near You</p>
+          <p style={{ fontSize: 12, color: "#a0a0a0", margin: "2px 0 0" }}>
+            {mappableCount === 0 ? "No restaurants have set their location yet" : `${mappableCount} restaurant${mappableCount !== 1 ? "s" : ""} on the map`}
           </p>
         </div>
-        <button
-          onClick={onClose}
-          style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: "#f7f5f2", border: "none",
-            fontSize: 18, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >✕</button>
+        <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: "50%", background: "#222", border: "none", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>✕</button>
       </div>
 
       {/* Map */}
       <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
-        <div
-          ref={containerRef}
-          style={{ position: "absolute", inset: 0 }}
-        />
+        <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
 
-        {/* Loading overlay */}
         {!mapReady && (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            background: "#f7f5f2", gap: 12,
-          }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", background: "#000000", gap: 12 }}>
             <div style={{ fontSize: 36 }}>🗺️</div>
-            <p style={{ fontSize: 14, color: "#7a7065" }}>Loading map…</p>
+            <p style={{ fontSize: 14, color: "#a0a0a0" }}>Loading map…</p>
           </div>
         )}
 
-        {/* No locations placeholder */}
         {mapReady && mappableCount === 0 && (
-          <div style={{
-            position: "absolute", bottom: 80, left: "50%",
-            transform: "translateX(-50%)",
-            background: "white", borderRadius: 14,
-            padding: "12px 20px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-            fontSize: 13, color: "#7a7065", whiteSpace: "nowrap",
-          }}>
+          <div style={{ position: "absolute", bottom: 80, left: "50%", transform: "translateX(-50%)", background: "#121212", border: "1px solid #222", borderRadius: 14, padding: "12px 20px", boxShadow: "0 4px 16px rgba(0,0,0,0.4)", fontSize: 13, color: "#a0a0a0", whiteSpace: "nowrap" }}>
             😕 No restaurants have pinned their location yet
           </div>
         )}
 
-        {/* Selected vendor card */}
         {selected && (
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0,
-            background: "white",
-            borderRadius: "20px 20px 0 0",
-            padding: "20px 20px 32px",
-            boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
-            display: "flex", alignItems: "flex-start", gap: 14,
-            animation: "slideUp 0.2s ease",
-          }}>
-            {/* Drag handle */}
-            <div style={{
-              position: "absolute", top: 8, left: "50%",
-              transform: "translateX(-50%)",
-              width: 36, height: 4, borderRadius: 2,
-              background: "#e8e4df",
-            }} />
-
-            {/* Vendor image/emoji */}
-            <div style={{
-              width: 64, height: 64, borderRadius: 14,
-              overflow: "hidden", flexShrink: 0,
-              background: "#f7f5f2",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 36, border: "1px solid #e8e4df",
-            }}>
-              {selected.cover_image_url
-                ? <img src={selected.cover_image_url} alt={selected.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : selected.image || "🍽️"
-              }
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "white", borderRadius: "20px 20px 0 0", padding: "20px 20px 32px", boxShadow: "0 -4px 24px rgba(0,0,0,0.15)", display: "flex", alignItems: "flex-start", gap: 14, animation: "slideUp 0.2s ease" }}>
+            <div style={{ position: "absolute", top: 8, left: "50%", transform: "translateX(-50%)", width: 36, height: 4, borderRadius: 2, background: "#333" }} />
+            <div style={{ width: 64, height: 64, borderRadius: 14, overflow: "hidden", flexShrink: 0, background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, border: "1px solid #222" }}>
+              {selected.cover_image_url ? <img src={selected.cover_image_url} alt={selected.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selected.image || "🍽️"}
             </div>
-
-            {/* Info */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 800, fontSize: 16, margin: "0 0 2px", fontFamily: "Georgia,serif" }}>{selected.name}</p>
+              <p style={{ fontWeight: 800, fontSize: 16, margin: "0 0 2px", fontFamily: "Georgia,serif", color: "#000000" }}>{selected.name}</p>
               <p style={{ fontSize: 12, color: "#7a7065", margin: "0 0 6px" }}>{selected.category}</p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "#7a7065" }}>
                 <span>⭐ {selected.rating || "New"}</span>
@@ -284,19 +203,7 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
                 <span>🛵 {fmt(selected.delivery_fee ?? selected.deliveryFee ?? 2)}</span>
               </div>
             </div>
-
-            {/* Order button */}
-            <button
-              onClick={() => { onVendorSelect(selected); onClose(); }}
-              style={{
-                background: "#e53935", border: "none", borderRadius: 12,
-                padding: "10px 18px", color: "white",
-                fontWeight: 700, fontSize: 14, cursor: "pointer",
-                fontFamily: "DM Sans, sans-serif", flexShrink: 0,
-              }}
-            >
-              Order
-            </button>
+            <button onClick={() => { onVendorSelect(selected); onClose(); }} style={{ background: "#e53935", border: "none", borderRadius: 12, padding: "10px 18px", color: "white", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "DM Sans, sans-serif", flexShrink: 0 }}>Order</button>
           </div>
         )}
       </div>
@@ -311,6 +218,7 @@ export default function Home({ navigate }) {
   const [activeCategory,  setActiveCategory]  = useState(1);
   const [vendors,         setVendors]         = useState([]);
   const [loading,         setLoading]         = useState(true);
+  const [favorites,       setFavorites]       = useState(new Set(JSON.parse(localStorage.getItem("kivo_favorites") || "[]")));
   const { coords, denied, hardBlocked, asking, request } = useCustomerLocation();
 
   useEffect(() => {
@@ -320,29 +228,55 @@ export default function Home({ navigate }) {
       .finally(() => setLoading(false));
   }, [coords]);
 
-  const filtered = vendors.filter(v => {
-    const catName     = categories.find(c => c.id === activeCategory)?.name;
-    const matchSearch = v.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat    = activeCategory === 1 || v.category === catName;
-    return matchSearch && matchCat;
-  });
-
   const shape = (v) => ({
     ...v,
     deliveryFee:  Number(v.delivery_fee  ?? v.deliveryFee  ?? 2),
     deliveryTime: v.delivery_time ?? v.deliveryTime ?? "20–35 min",
-    tagColor:     v.tag_color ?? v.tagColor ?? "#ff6b35",
+    tagColor:     v.tag_color ?? v.tagColor ?? "#e53935",
     reviewCount:  v.review_count ?? v.reviews ?? 0,
   });
 
-  // Lock body scroll when map is open
+  const toggleFavorite = (vendorId) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(vendorId)) {
+      newFavorites.delete(vendorId);
+    } else {
+      newFavorites.add(vendorId);
+    }
+    setFavorites(newFavorites);
+    localStorage.setItem("kivo_favorites", JSON.stringify([...newFavorites]));
+  };
+
+  // Filter vendors
+  const catName = categories.find(c => c.id === activeCategory)?.name;
+  const filtered = vendors.filter(vendor => {
+    const matchCat = activeCategory === 1 || vendor.category === catName;
+    const matchSearch = !search || vendor.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const shapedVendors = vendors.map(shape);
+  const topRatedCount = shapedVendors.filter(v => Number(v.rating) >= 4.7).length;
+  const fastestVendor = shapedVendors.filter(v => v.deliveryTime).sort((a, b) => parseInt(a.deliveryTime, 10) - parseInt(b.deliveryTime, 10))[0];
+
   useEffect(() => {
     document.body.style.overflow = showMap ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [showMap]);
 
   return (
-    <div className="page home-page">
+    <div 
+      className="page home-page" 
+      style={{ 
+        background: "#000000", 
+        minHeight: "100vh", 
+        color: "#ffffff", 
+        padding: "0 16px",
+        /* Pushes the container safely below the device status bar/notch area */
+        paddingTop: "calc(var(--sat) + 16px)", 
+        position: "relative"
+      }}
+    >
 
       {/* ── Full-screen map modal ── */}
       {showMap && (
@@ -354,136 +288,177 @@ export default function Home({ navigate }) {
         />
       )}
 
-      {/* ── Hero ── */}
-      <div className="home-hero">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
-          <div>
-            <p className="greeting-sub">Good afternoon 👋</p>
-            <h1 className="greeting-main">
-              What are you <br /><em>craving today?</em>
-            </h1>
-          </div>
-        </div>
+      {/* ── Clean Top Header ── */}
+      <div className="home-hero" style={{ paddingTop: "0px", paddingBottom: "16px", background: "#000000", marginTop: "calc(-1 * var(--sat))" }}>
+        <div className="home-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", paddingTop: "8px" }}>
+          
+          {/* Profile Button (Left) */}
+          <button onClick={() => navigate("profile")} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }} aria-label="View Profile">
+            <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "linear-gradient(135deg, #e53935, #ff7043)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", boxShadow: "0 2px 8px rgba(229,57,53,0.4)", color: "white", fontWeight: "bold" }}>
+              A
+            </div>
+          </button>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <div className="search-bar" style={{ flex: 1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input
-              placeholder="Search food or restaurants..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && <button className="clear-search" onClick={() => setSearch("")}>✕</button>}
-          </div>
-
-          {/* 📍 button — opens full-screen map */}
-          <button
-            onClick={() => {
-              if (!coords && !denied) request();
-              setShowMap(true);
-            }}
-            style={{
-              width: 46, height: 46, borderRadius: 14, flexShrink: 0,
-              background: coords ? "#e53935" : "rgba(255,255,255,0.15)",
-              border: coords ? "none" : "1.5px solid rgba(255,255,255,0.3)",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "background 0.2s",
-              boxShadow: coords ? "0 4px 12px rgba(229,57,53,0.4)" : "none",
-            }}
-            title="View restaurants on map"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-              <circle cx="12" cy="10" r="3"/>
+          {/* Cart Button (Right) */}
+          <button onClick={() => navigate("cart")} style={{ width: "42px", height: "42px", borderRadius: "50%", background: "#1a1a1a", border: "1px solid #e53935", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(229,57,53,0.2)", color: "#e53935" }} aria-label="View Cart">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
             </svg>
           </button>
         </div>
 
-        {/* Location tag under search */}
-        {coords && (
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-            <span>📍</span> Showing restaurants near you
-          </p>
-        )}
+        {/* ── Search Input Row ── */}
+        <div className="home-search-row" style={{ display: "flex", gap: "10px", width: "100%" }}>
+          <div className="search-bar home-search" style={{ background: "#1a1a1a", border: "1px solid #222", flex: 1, borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              placeholder="Search meals or restaurants"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ color: "#ffffff", background: "transparent", border: "none", outline: "none", flex: 1, fontSize: "14px" }}
+              onFocus={(e) => e.target.parentElement.style.borderColor = "#e53935"}
+              onBlur={(e) => e.target.parentElement.style.borderColor = "#222"}
+            />
+            {search && <button className="clear-search" onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "#e53935", cursor: "pointer" }}>✕</button>}
+          </div>
+
+          <button className="home-location-btn" onClick={() => (coords ? setShowMap(true) : request())} style={{ width: "46px", height: "46px", borderRadius: "14px", flexShrink: 0, background: "linear-gradient(135deg, #ff5a52, #d92828)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 22px rgba(229,57,53,0.28)" }} aria-label={coords ? "View restaurants near you" : "Use current location"}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+              <path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* ── Insights row ── */}
+        <div className="home-insights" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#121212", borderRadius: "16px", padding: "16px 8px", border: "1px solid rgba(229, 57, 53, 0.35)", marginTop: "16px" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: "1px solid #222" }}>
+            <strong style={{ color: "#e53935", fontSize: "18px", fontWeight: "800", marginBottom: "4px" }}>{topRatedCount || "-"}</strong>
+            <span style={{ color: "#a0a0a0", fontSize: "12px", fontWeight: "500" }}>Top rated</span>
+          </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: "1px solid #222" }}>
+            <strong style={{ color: "#e53935", fontSize: "18px", fontWeight: "800", marginBottom: "4px" }}>{fastestVendor?.deliveryTime?.split(" ")[0] || "20"}</strong>
+            <span style={{ color: "#a0a0a0", fontSize: "12px", fontWeight: "500" }}>Fastest ETA</span>
+          </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <strong style={{ color: "#e53935", fontSize: "18px", fontWeight: "800", marginBottom: "4px" }}>{favorites.size}</strong>
+            <span style={{ color: "#a0a0a0", fontSize: "12px", fontWeight: "500" }}>Saved</span>
+          </div>
+        </div>
       </div>
 
-      {/* ── Location nudge (only if denied) ── */}
-      {!coords && denied && (
-        <div className="hv2-nudge" style={{ margin: "12px 16px" }}>
-          <span>📍</span>
-          <div style={{ flex: 1 }}>
-            {hardBlocked ? (
-              <>
-                <p style={{ fontWeight: 600, fontSize: 13 }}>Location blocked</p>
-                <p style={{ fontSize: 12, color: "#999", marginTop: 1, lineHeight: 1.4 }}>
-                  Go to browser Settings → Site permissions → Location → allow Kivo, then refresh.
-                </p>
-              </>
-            ) : (
-              <>
-                <p style={{ fontWeight: 600, fontSize: 13 }}>Enable location for nearby results</p>
-                <p style={{ fontSize: 12, color: "#999", marginTop: 1 }}>We'll show closest restaurants first</p>
-              </>
-            )}
-          </div>
-          {!hardBlocked && (
-            <button className="hv2-nudge-btn" onClick={request} disabled={asking}>
-              {asking ? "…" : "Allow"}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Promo banner ── */}
-      {!search && (
-        <div className="promo-banner">
-          <div className="promo-text">
-            <span className="promo-tag">🔥 LIMITED TIME</span>
-            <h3>Free delivery on first order!</h3>
-            <p>Use code <strong>KIVO1ST</strong></p>
-          </div>
-          <div className="promo-art">🛵</div>
-        </div>
-      )}
-
       {/* ── Category pills ── */}
-      <section className="section">
-        <div className="categories-scroll">
+      <section className="section" style={{ marginTop: "16px", padding: 0 }}>
+        <div className="categories-scroll" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px" }}>
           {categories.map(cat => (
-            <button
-              key={cat.id}
-              className={`cat-pill ${activeCategory === cat.id ? "active" : ""}`}
-              onClick={() => setActiveCategory(cat.id)}
-            >
-              <span>{cat.emoji}</span><span>{cat.name}</span>
+            <button key={cat.id} className={`cat-pill ${activeCategory === cat.id ? "active" : ""}`} onClick={() => setActiveCategory(cat.id)} style={{ padding: "10px 18px", borderRadius: "100px", background: activeCategory === cat.id ? "#e53935" : "#1a1a1a", border: activeCategory === cat.id ? "1px solid #e53935" : "1px solid #222", color: "#ffffff", whiteSpace: "nowrap", cursor: "pointer", fontSize: "13px", fontWeight: "500" }}>
+              <span>{cat.emoji}</span><span style={{ marginLeft: "6px" }}>{cat.name}</span>
             </button>
           ))}
         </div>
       </section>
 
-      {/* ── Popular section ── */}
+      {/* ── Popular section with Auto-Scroll ── */}
       {activeCategory === 1 && !search && (
-        <section className="section">
-          <div className="section-header"><h2>🔥 Popular Right Now</h2></div>
-          <div className="popular-scroll">
+        <section className="section" style={{ marginTop: "24px", padding: 0 }}>
+          <div className="section-header" style={{ marginBottom: "16px", padding: "0 4px" }}>
+            <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "19px", fontWeight: 800, margin: 0, color: "#ffffff", letterSpacing: "-0.3px" }}>
+              🔥 Popular Right Now
+            </h2>
+          </div>
+          
+          <div 
+            ref={(el) => {
+              // Internal layout scroll loop handler
+              if (!el) return;
+              if (el.dataset.scrollInit) return;
+              el.dataset.scrollInit = "true";
+
+              let isPaused = false;
+              let scrollSpeed = 0.6; // Adjust this smaller for slower, larger for faster speed
+
+              const autoScroll = () => {
+                if (!isPaused) {
+                  // Increment scroll position
+                  el.scrollLeft += scrollSpeed;
+                  
+                  // Reset smoothly to the start if it hits the maximum scroll width
+                  if (el.scrollLeft >= el.scrollWidth - el.clientWidth) {
+                    el.scrollLeft = 0;
+                  }
+                }
+                requestAnimationFrame(autoScroll);
+              };
+
+              // Temporarily pause auto-scroll when user interacts by hand
+              el.addEventListener("touchstart", () => isPaused = true, { passive: true });
+              el.addEventListener("mousedown", () => isPaused = true);
+              
+              // Resume auto-scroll when user stops interacting
+              el.addEventListener("touchend", () => isPaused = false, { passive: true });
+              el.addEventListener("mouseup", () => isPaused = false);
+              el.addEventListener("mouseleave", () => isPaused = false);
+
+              // Kickoff animation frame
+              requestAnimationFrame(autoScroll);
+            }}
+            className="popular-scroll" 
+            style={{ 
+              display: "flex", 
+              gap: "14px", 
+              overflowX: "auto", 
+              paddingBottom: "8px", 
+              scrollbarWidth: "none",
+              scrollBehavior: "auto" // Keeps pixel-perfect layout increments smooth
+            }} 
+          >
             {popularMeals.map(meal => (
-              <div
-                key={meal.id}
-                className="popular-card"
+              <div 
+                key={meal.id} 
+                className="popular-card" 
+                style={{ 
+                  background: "#121212", 
+                  borderRadius: "18px", 
+                  padding: "16px", 
+                  width: "150px", 
+                  flexShrink: 0, 
+                  cursor: "pointer",
+                  border: "1px solid #1c1c1e"
+                }} 
                 onClick={() => {
                   const v = vendors.find(v => v.id === meal.vendorId);
                   if (v) navigate("vendor", shape(v));
                 }}
               >
-                <span className="popular-emoji">{meal.image}</span>
-                <p className="popular-name">{meal.name}</p>
-                <p className="popular-vendor">{meal.vendorName}</p>
-                <div className="popular-bottom">
-                  <span className="popular-price">{fmt(meal.price)}</span>
-                  <span className="popular-rating">⭐ {meal.rating}</span>
+                {/* Accent circular badge for emoji */}
+                <div style={{
+                  width: "50px",
+                  height: "50px",
+                  borderRadius: "50%",
+                  background: "rgba(229, 57, 53, 0.12)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "26px",
+                  marginBottom: "14px"
+                }}>
+                  {meal.image}
+                </div>
+                <p className="popular-name" style={{ color: "#ffffff", fontSize: "14px", fontWeight: "700", margin: "0 0 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {meal.name}
+                </p>
+                <p className="popular-vendor" style={{ color: "#a0a0a0", fontSize: "12px", margin: "0 0 14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {meal.vendorName}
+                </p>
+                <div className="popular-bottom" style={{ display: "flex", justifycontent: "space-between", alignItems: "center" }}>
+                  <span className="popular-price" style={{ color: "#e53935", fontSize: "15px", fontWeight: "800" }}>
+                    {fmt(meal.price)}
+                  </span>
+                  <span className="popular-rating" style={{ color: "#ffb300", fontSize: "12px", fontWeight: "600" }}>
+                    ★ {meal.rating}
+                  </span>
                 </div>
               </div>
             ))}
@@ -491,43 +466,97 @@ export default function Home({ navigate }) {
         </section>
       )}
 
-      {/* ── Restaurants list ── */}
-      <section className="section">
-        <div className="section-header">
-          <h2>{search ? `Results for "${search}"` : "🏪 Nearby Restaurants"}</h2>
-          <span className="section-count">{loading ? "..." : `${filtered.length} places`}</span>
+      {/* ── Restaurants grid (main display) ── */}
+      <section className="section" style={{ marginTop: "32px", padding: 0 }}>
+        <div style={{ marginBottom: "16px", padding: "0 4px" }}>
+          <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "19px", fontWeight: 800, margin: 0, color: "#ffffff", letterSpacing: "-0.3px" }}>
+            {search ? `🔍 Results for "${search}"` : "🍽️ What's cooking"}
+          </h2>
+          <p style={{ fontSize: "12px", color: "#a0a0a0", margin: "4px 0 0", lineHeight: 1.4 }}>
+            {activeCategory === 1 ? "All restaurants near you" : `${categories.find(c => c.id === activeCategory)?.name || ""} restaurants`}
+          </p>
         </div>
+
         {loading ? (
-          <div className="empty-state"><p>Loading restaurants...</p></div>
+          <div className="empty-state" style={{ textAlign: "center", padding: "40px 0" }}><p style={{ color: "#a0a0a0", margin: 0 }}>Loading restaurants...</p></div>
         ) : filtered.length === 0 ? (
-          <div className="empty-state"><p>😕 No results</p><span>Try a different search</span></div>
+          <div className="empty-state" style={{ textAlign: "center", padding: "40px 0" }}><p style={{ color: "#a0a0a0", fontWeight: "600", margin: "0 0 4px" }}>😕 No restaurants found</p><span style={{ color: "#777", fontSize: "13px" }}>Try a different search or category</span></div>
         ) : (
-          <div className="vendors-list">
-            {filtered.map(raw => {
-              const v = shape(raw);
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", padding: 0, marginBottom: "24px" }}>
+            {filtered.map(vendor => {
+              const v = shape(vendor);
               return (
-                <div key={v.id} className="vendor-card" onClick={() => navigate("vendor", v)}>
-                  {v.cover_image_url ? (
-                    <div className="vendor-img" style={{ padding: 0, overflow: "hidden" }}>
-                      <img src={v.cover_image_url} alt={v.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      {v.tag && <span className="vendor-tag" style={{ background: v.tagColor }}>{v.tag}</span>}
-                    </div>
-                  ) : (
-                    <div className="vendor-img">
-                      <span>{v.image}</span>
-                      {v.tag && <span className="vendor-tag" style={{ background: v.tagColor }}>{v.tag}</span>}
-                    </div>
-                  )}
-                  <div className="vendor-info">
-                    <div className="vendor-header">
-                      <h3>{v.name}</h3>
-                      <span className="vendor-rating">⭐ {v.rating}</span>
-                    </div>
-                    <p className="vendor-category">{v.category}</p>
-                    <div className="vendor-meta">
-                      {v.distance && <span>📍 {v.distance}</span>}
-                      <span>⏱ {v.deliveryTime}</span>
-                      <span>🛵 {fmt(v.deliveryFee)}</span>
+                <div 
+                  key={v.id} 
+                  style={{ 
+                    background: "#121212", 
+                    borderRadius: "18px", 
+                    border: "1px solid #1c1c1e", 
+                    overflow: "hidden", 
+                    cursor: "pointer", 
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.3)", 
+                    display: "flex", 
+                    flexDirection: "column" 
+                  }} 
+                  onClick={() => navigate("vendor", v)}
+                >
+                  {/* Image area */}
+                  <div 
+                    style={{ 
+                      height: "115px", 
+                      background: v.cover_image_url 
+                        ? `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.6)), url(${v.cover_image_url}) center/cover`
+                        : "linear-gradient(135deg, #1a1a1a, #111111)", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center", 
+                      position: "relative", 
+                      fontSize: 38, 
+                      color: "white"
+                    }}
+                  >
+                    {!v.cover_image_url && (v.image || "🍽️")}
+                    
+                    {/* Dark Translucent Favorite Button */}
+                    <button 
+                      onClick={e => { e.stopPropagation(); toggleFavorite(v.id); }} 
+                      style={{ 
+                        position: "absolute", 
+                        top: 8, 
+                        right: 8, 
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: "50%", 
+                        background: "rgba(0, 0, 0, 0.5)", 
+                        backdropFilter: "blur(4px)",
+                        border: "1px solid rgba(255,255,255,0.1)", 
+                        cursor: "pointer", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        fontSize: 14,
+                        transition: "background 0.2s"
+                      }}
+                    >
+                      {favorites.has(v.id) ? "❤️" : "🤍"}
+                    </button>
+                  </div>
+
+                  {/* Content area */}
+                  <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", flex: 1 }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "700", margin: "0 0 3px", color: "#ffffff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {v.name}
+                    </h4>
+                    <p style={{ fontSize: "12px", color: "#a0a0a0", margin: "0 0 12px", lineHeight: 1.3 }}>
+                      {v.category}
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto", fontSize: "12px", color: "#a0a0a0" }}>
+                      <span style={{ color: "#e53935", fontWeight: "700", display: "flex", alignItems: "center", gap: "3px" }}>
+                        ★ <span style={{ color: "#ffffff" }}>{v.rating || "New"}</span>
+                      </span>
+                      <span style={{ fontSize: "11px", color: "#a0a0a0", background: "#1c1c1e", padding: "3px 8px", borderRadius: "6px" }}>
+                        ⏱ {v.deliveryTime.split(" ")[0]}
+                      </span>
                     </div>
                   </div>
                 </div>

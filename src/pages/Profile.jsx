@@ -1,33 +1,41 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "../context/AccountContext.jsx";
-import { useTheme } from "../context/ThemeContext.jsx"; 
 import { apiRequest } from "../api/index.js";
 import SuccessModal from "../components/SuccessModal.jsx";
 import { fmt } from "../utils/currency.js";
 
-// Updated Field component to accept darkMode state
-function Field({ label, value, onChange, type = "text", placeholder, disabled, darkMode }) {
+// ── PERMANENTLY DARK STATEFUL FIELD COMPONENT ────────────────────────────────
+function Field({ label, value, onChange, type = "text", placeholder, disabled }) {
   return (
-    <div style={{ position: "relative", marginBottom: 20 }}>
+    <div style={{ position: "relative", marginBottom: "20px" }}>
       <label style={{
-        position: "absolute", left: 16, top: -8, 
-        background: darkMode ? "#1e1e1e" : "white", // Adaptive label background
+        position: "absolute", 
+        left: "14px", 
+        top: "-8px", 
+        background: "#000000", 
         padding: "0 6px",
-        fontSize: 12, fontWeight: 500, 
-        color: darkMode ? "#a3978c" : "#7a7065", 
-        zIndex: 2, pointerEvents: "none"
+        fontSize: "11px", 
+        fontWeight: "700", 
+        color: "#e53935", 
+        zIndex: 2, 
+        pointerEvents: "none",
+        letterSpacing: "0.3px"
       }}>
         {label}
       </label>
       <input
         style={{
-          width: "100%", height: 50, 
-          border: darkMode ? "1px solid #333230" : "1px solid #e8e4df", 
-          borderRadius: 14,
-          padding: "0 16px", fontSize: 14, fontWeight: 600,
-          color: disabled ? (darkMode ? "#a3978c" : "#7a7065") : (darkMode ? "#f5f5f5" : "#0f0f0f"),
-          background: disabled ? (darkMode ? "#181817" : "#fafaf9") : (darkMode ? "#1e1e1e" : "white"),
-          outline: "none", boxSizing: "border-box"
+          width: "100%", 
+          height: "50px", 
+          border: "1px solid #222222", 
+          borderRadius: "14px",
+          padding: "0 16px", 
+          fontSize: "14px", 
+          fontWeight: "600",
+          color: disabled ? "#666666" : "#ffffff",
+          background: disabled ? "#0a0a0a" : "#121212",
+          outline: "none", 
+          boxSizing: "border-box"
         }}
         type={type}
         value={value}
@@ -39,29 +47,34 @@ function Field({ label, value, onChange, type = "text", placeholder, disabled, d
   );
 }
 
-// Updated ListRow component to accept darkMode state
-function ListRow({ icon, label, onClick, badge, rightElement, darkMode }) {
+// ── PERMANENTLY DARK LIST ROW ENTRY ──────────────────────────────────────────
+function ListRow({ icon, label, onClick, badge, rightElement }) {
   return (
     <div 
       style={{
-        width: "100%", display: "flex", alignItems: "center", background: "none",
-        border: "none", padding: "14px 0", 
-        borderBottom: darkMode ? "1px solid #262524" : "1px solid #fcfbfa"
+        width: "100%", 
+        display: "flex", 
+        alignItems: "center", 
+        padding: "14px 0", 
+        borderBottom: "1px solid #1a1a1a"
       }}
     >
-      <span style={{ marginRight: 12, fontSize: 16 }}>{icon}</span>
+      <span style={{ marginRight: "12px", fontSize: "16px" }}>{icon}</span>
       <span style={{ 
-        flex: 1, textAlign: "left", fontSize: 14, fontWeight: 500, 
-        color: darkMode ? "#cbc2ba" : "#5c534c" 
+        flex: 1, 
+        textAlign: "left", 
+        fontSize: "14px", 
+        fontWeight: "600", 
+        color: "#ffffff" 
       }}>{label}</span>
       {badge && (
-        <span style={{ fontSize: 11, background: "#fee2e2", color: "#e53935", padding: "2px 8px", borderRadius: 8, marginRight: 8, fontWeight: 600 }}>
+        <span style={{ fontSize: "11px", background: "rgba(229, 57, 53, 0.15)", color: "#e53935", padding: "2px 8px", borderRadius: "8px", marginRight: "8px", fontWeight: "700" }}>
           {badge}
         </span>
       )}
       {rightElement ? rightElement : (
         <button type="button" onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#a3978c" : "#7a7065"} strokeWidth="2.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666666" strokeWidth="2.5">
             <path d="M9 18l6-6-6-6"/>
           </svg>
         </button>
@@ -70,9 +83,9 @@ function ListRow({ icon, label, onClick, badge, rightElement, darkMode }) {
   );
 }
 
+// ── MAIN PROFILE SCREEN COMPONENT ───────────────────────────────────────────
 export default function Profile({ navigate }) {
   const { user, logout, updateUser } = useAccount();
-  const { darkMode, toggleTheme } = useTheme(); 
   
   const [form, setForm] = useState({
     name: user?.name || "",
@@ -133,121 +146,139 @@ export default function Profile({ navigate }) {
   };
 
   return (
-    <div style={{
-      background: darkMode ? "#121212" : "#fafaf9", // Global page background
-      minHeight: "100vh",
-      margin: "calc(-1 * (var(--nav-h) + var(--sat))) 0 0",
-      padding: 0,
-      fontFamily: "DM Sans, sans-serif",
-      boxSizing: "border-box",
-      transition: "background 0.2s ease-in-out"
-    }}>
-
-      {/* Top Header Row */}
+    <div 
+      className="page profile-page" 
+      style={{
+        background: "#000000",
+        backgroundColor: "#000000",
+        minHeight: "100vh",
+        /* 🛠️ THE FIX: Pulls page up over the empty navigation bar spacer area */
+        marginTop: "calc(-1 * (var(--nav-h) + var(--sat)))", 
+        padding: 0,
+        paddingTop: "calc(var(--sat) + 12px)",
+        fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
+        boxSizing: "border-box"
+      }}
+    >
+      {/* Top Header Row — Perfectly flush with phone top bar */}
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "calc(var(--sat) + 20px) 20px 10px 20px",
-        background: darkMode ? "#1e1e1e" : "white", 
-        borderBottom: darkMode ? "1px solid #292827" : "1px solid #f4f1ed",
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "space-between",
+        padding: "12px 20px 10px 20px",
+        background: "#000000",
+        borderBottom: "1px solid #141414",
       }}>
-        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={darkMode ? "#f5f5f5" : "#362f2d"} strokeWidth="2.5">
+        <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
         </button>
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>My Profile</h2>
-        <div style={{ width: 32 }} />
+        <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#ffffff", fontFamily: "var(--font-heading)" }}>
+          Profile
+        </h2>
+        <div style={{ width: "22px" }} />
       </div>
 
-      {/* Main Form content alignment */}
-      <div style={{ maxWidth: 420, margin: "0 auto", padding: "20px 16px" }}>
-
-        {/* Top Identity Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+      {/* Content Body Container Layout */}
+      <div style={{ maxWidth: "420px", margin: "0 auto", padding: "20px 16px" }}>
+        
+        {/* Profile Summary Header Card */}
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px", padding: "4px" }}>
           <div style={{ 
-            width: 54, height: 54, borderRadius: 14, 
-            background: darkMode ? "#2c1a1a" : "#ffebea", 
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#e53935" 
+            width: "56px", 
+            height: "56px", 
+            borderRadius: "50%", 
+            background: "rgba(229, 57, 53, 0.12)", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            fontSize: "20px", 
+            fontWeight: "800", 
+            color: "#e53935",
+            border: "1px solid rgba(229, 57, 53, 0.2)"
           }}>
             {form.name ? form.name[0].toUpperCase() : "👤"}
           </div>
-          <div>
-            <h3 style={{ margin: "0 0 2px 0", fontSize: 16, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>{form.name || "User"}</h3>
-            <p style={{ margin: 0, fontSize: 12, color: darkMode ? "#a3978c" : "#7a7065" }}>{form.email}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "800", color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {form.name || "User Account"}
+            </h3>
+            <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#a0a0a0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {form.email}
+            </p>
           </div>
         </div>
 
-        {/* Central Settings Card Container */}
-        <div style={{ 
-          background: darkMode ? "#1e1e1e" : "white", 
-          borderRadius: 20, padding: "20px 16px", 
-          boxShadow: darkMode ? "none" : "0 4px 15px rgba(0,0,0,0.01)" 
-        }}>
-          {stats && (
-            <div style={{ 
-              display: "flex", justifyContent: "space-around", 
-              background: darkMode ? "#181817" : "#fafaf9", 
-              padding: "10px 4px", borderRadius: 12, marginBottom: 20 
-            }}>
-              <div style={{ textAlign: "center" }}>
-                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>{stats.completedOrders}</span>
-                <span style={{ fontSize: 10, color: darkMode ? "#a3978c" : "#7a7065" }}>Orders</span>
-              </div>
-              <div style={{ width: 1, background: darkMode ? "#2d2c2a" : "#e8e4df" }} />
-              <div style={{ textAlign: "center" }}>
-                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>{fmt(stats.totalSpent)}</span>
-                <span style={{ fontSize: 10, color: darkMode ? "#a3978c" : "#7a7065" }}>Spent</span>
-              </div>
-              <div style={{ width: 1, background: darkMode ? "#2d2c2a" : "#e8e4df" }} />
-              <div style={{ textAlign: "center" }}>
-                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>{stats.activeOrders}</span>
-                <span style={{ fontSize: 10, color: darkMode ? "#a3978c" : "#7a7065" }}>Active</span>
-              </div>
+        {/* Dark Metrics Grid Segment */}
+        {stats && (
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-around", 
+            background: "#121212", 
+            padding: "14px 4px", 
+            borderRadius: "16px", 
+            marginBottom: "24px",
+            border: "1px solid #1a1a1a",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.4)"
+          }}>
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <span style={{ display: "block", fontSize: "15px", fontWeight: "800", color: "#ffffff" }}>{stats.completedOrders}</span>
+              <span style={{ fontSize: "11px", color: "#666666", marginTop: "2px", display: "block" }}>Orders</span>
             </div>
-          )}
+            <div style={{ width: "1px", background: "#222222" }} />
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <span style={{ display: "block", fontSize: "15px", fontWeight: "800", color: "#e53935" }}>{fmt(stats.totalSpent)}</span>
+              <span style={{ fontSize: "11px", color: "#666666", marginTop: "2px", display: "block" }}>Spent</span>
+            </div>
+            <div style={{ width: "1px", background: "#222222" }} />
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <span style={{ display: "block", fontSize: "15px", fontWeight: "800", color: "#16a34a" }}>{stats.activeOrders}</span>
+              <span style={{ fontSize: "11px", color: "#666666", marginTop: "2px", display: "block" }}>Active</span>
+            </div>
+          </div>
+        )}
 
-          <Field label="Name" value={form.name} onChange={set("name")} placeholder="Full Name" darkMode={darkMode} />
-          <Field label="Delivery address" value={form.address} onChange={set("address")} placeholder="Address Line" darkMode={darkMode} />
-          <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="Phone number" darkMode={darkMode} />
+        {/* Input Fields Panel */}
+        <div style={{ marginBottom: "24px" }}>
+          <Field label="Name" value={form.name} onChange={set("name")} placeholder="Full Name" />
+          <Field label="Delivery address" value={form.address} onChange={set("address")} placeholder="Address Line" />
+          <Field label="Phone number" value={form.phone} onChange={set("phone")} placeholder="Phone number" />
+          {error && <p style={{ fontSize: "13px", color: "#ef4444", marginTop: "-10px", marginBottom: "16px", fontWeight: 600 }}>{error}</p>}
+        </div>
 
-          {error && <p style={{ fontSize: 12, color: "#ef4444", marginTop: -8, marginBottom: 16 }}>{error}</p>}
-
-          <div style={{ height: 1, background: darkMode ? "#2d2c2a" : "#f5f3f0", margin: "12px 0" }} />
-
-          {/* Theme Toggle Option */}
-          <ListRow 
-            icon={darkMode ? "🌙" : "☀️"} 
-            label="Dark Mode" 
-            darkMode={darkMode}
-            rightElement={
-              <input 
-                type="checkbox" 
-                checked={darkMode} 
-                onChange={toggleTheme}
-                style={{ width: 18, height: 18, accentColor: "#e53935", cursor: "pointer" }}
-              />
-            }
-          />
-
+        {/* Action Options Panel (Dark mode option removed) */}
+        <div style={{ 
+          background: "#121212", 
+          borderRadius: "16px", 
+          padding: "6px 16px", 
+          border: "1px solid #1a1a1a",
+          marginBottom: "30px"
+        }}>
           <ListRow 
             icon="💳" 
             label="Payment Details" 
             onClick={() => setShowPayPopup(true)} 
             badge={hasSavedCard ? "Active" : null} 
-            darkMode={darkMode}
           />
-          <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} darkMode={darkMode} />
+          <ListRow icon="🧾" label="Order history" onClick={() => navigate("orders")} />
         </div>
 
-        {/* Action Controls */}
-        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+        {/* Main Action Buttons */}
+        <div style={{ display: "flex", gap: "12px" }}>
           <button 
             type="button" onClick={save} disabled={saving}
             style={{ 
-              flex: 1.2, height: 48, 
-              background: darkMode ? "#e53935" : "#362f2d", // High contrast button color change
-              color: "white", border: "none", 
-              borderRadius: 14, fontWeight: 700, fontSize: 14, cursor: saving ? "not-allowed" : "pointer"
+              flex: 1.3, 
+              height: "50px", 
+              background: "#e53935", 
+              color: "#ffffff", 
+              border: "none", 
+              borderRadius: "14px", 
+              fontWeight: "700", 
+              fontSize: "14px", 
+              cursor: saving ? "not-allowed" : "pointer",
+              boxShadow: "0 4px 14px rgba(229,57,53,0.3)"
             }}
           >
             {saving ? "Saving…" : "Save Changes"}
@@ -255,40 +286,53 @@ export default function Profile({ navigate }) {
           <button 
             type="button" onClick={logout}
             style={{ 
-              flex: 1, height: 48, 
-              background: darkMode ? "#121212" : "white", 
-              color: "#e53935", border: "2px solid #e53935", 
-              borderRadius: 14, fontWeight: 700, fontSize: 14, cursor: "pointer"
+              flex: 1, 
+              height: "50px", 
+              background: "transparent", 
+              color: "#ef4444", 
+              border: "2px solid rgba(239, 68, 68, 0.2)", 
+              borderRadius: "14px", 
+              fontWeight: "700", 
+              fontSize: "14px", 
+              cursor: "pointer"
             }}
           >
             Log out
           </button>
         </div>
-
-        <div style={{ height: 30 }} />
       </div>
 
       {/* ── HIGH OVERLAY POPUP FORM MODAL ── */}
       {showPayPopup && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px", backdropFilter: "blur(4px)" }}>
           <form onSubmit={savePaymentSettings} style={{ 
-            background: darkMode ? "#1e1e1e" : "white", 
-            width: "100%", maxWidth: 360, borderRadius: 20, padding: 24, 
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)", boxSizing: "border-box" 
+            background: "#121212", 
+            border: "1px solid #222222",
+            width: "100%", 
+            maxWidth: "360px", 
+            borderRadius: "20px", 
+            padding: "24px", 
+            boxShadow: "0 12px 40px rgba(0,0,0,0.6)", 
+            boxSizing: "border-box" 
           }}>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: 16, fontWeight: 700, color: darkMode ? "#f5f5f5" : "#362f2d" }}>Payment Details</h3>
-            <p style={{ margin: "0 0 20px 0", fontSize: 12, color: darkMode ? "#a3978c" : "#7a7065", lineHeight: 1.4 }}>Set standard parameters for checkout operations.</p>
+            <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "800", color: "#ffffff", fontFamily: "var(--font-heading)" }}>Payment Details</h3>
+            <p style={{ margin: "0 0 20px 0", fontSize: "12px", color: "#a0a0a0", lineHeight: 1.4 }}>Set standard parameters for checkout operations.</p>
             
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: darkMode ? "#a3978c" : "#7a7065", marginBottom: 6 }}>Default Mobile Money Number</label>
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#e53935", marginBottom: "6px" }}>Default Mobile Money Number</label>
               <input 
                 type="tel" 
                 style={{ 
-                  width: "100%", height: 44, 
-                  border: darkMode ? "1px solid #333230" : "1px solid #e8e4df", 
-                  borderRadius: 12, padding: "0 12px", fontSize: 13, boxSizing: "border-box", outline: "none",
-                  background: darkMode ? "#121212" : "white",
-                  color: darkMode ? "#f5f5f5" : "#0f0f0f"
+                  width: "100%", 
+                  height: "44px", 
+                  border: "1px solid #222222", 
+                  borderRadius: "12px", 
+                  padding: "0 12px", 
+                  fontSize: "13px", 
+                  boxSizing: "border-box", 
+                  outline: "none",
+                  background: "#000000",
+                  color: "#ffffff"
                 }}
                 value={payPhone} 
                 onChange={e => setPayPhone(e.target.value)} 
@@ -297,30 +341,35 @@ export default function Profile({ navigate }) {
             </div>
 
             <div style={{ 
-              background: darkMode ? "#181817" : "#fafaf9", 
-              borderRadius: 12, padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, 
-              border: darkMode ? "1px solid #2d2c2a" : "1px solid #edebe8" 
+              background: "#0a0a0a", 
+              borderRadius: "12px", 
+              padding: "12px", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "space-between", 
+              marginBottom: "24px", 
+              border: "1px solid #222222" 
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 16 }}>💳</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "16px" }}>💳</span>
                 <div>
-                  <span style={{ fontSize: 13, fontWeight: 600, display: "block", color: darkMode ? "#f5f5f5" : "#362f2d" }}>Credit / Debit Card</span>
-                  <span style={{ fontSize: 11, color: hasSavedCard ? "#16a34a" : (darkMode ? "#a3978c" : "#7a7065") }}>{hasSavedCard ? "Token linked securely" : "No saved cards"}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "700", display: "block", color: "#ffffff" }}>Credit / Debit Card</span>
+                  <span style={{ fontSize: "11px", color: hasSavedCard ? "#16a34a" : "#666666", fontWeight: "600" }}>{hasSavedCard ? "Token linked securely" : "No saved cards"}</span>
                 </div>
               </div>
               <input 
                 type="checkbox" 
                 checked={hasSavedCard} 
                 onChange={e => setHasSavedCard(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: "#e53935", cursor: "pointer" }}
+                style={{ width: "16px", height: "16px", accentColor: "#e53935", cursor: "pointer" }}
               />
             </div>
 
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="submit" disabled={updatingPayment} style={{ flex: 1.2, height: 42, background: darkMode ? "#e53935" : "#362f2d", color: "white", border: "none", borderRadius: 12, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button type="submit" disabled={updatingPayment} style={{ flex: 1.2, height: "42px", background: "#e53935", color: "#ffffff", border: "none", borderRadius: "12px", fontWeight: "700", fontSize: "13px", cursor: "pointer" }}>
                 {updatingPayment ? "Saving…" : "Save Wallet"}
               </button>
-              <button type="button" onClick={() => setShowPayPopup(false)} style={{ flex: 1, height: 42, background: "none", border: darkMode ? "1px solid #333230" : "1px solid #e8e4df", borderRadius: 12, fontSize: 13, color: darkMode ? "#a3978c" : "#7a7065", cursor: "pointer" }}>
+              <button type="button" onClick={() => setShowPayPopup(false)} style={{ flex: 1, height: "42px", background: "none", border: "1px solid #222222", borderRadius: "12px", fontSize: "13px", color: "#a0a0a0", cursor: "pointer" }}>
                 Cancel
               </button>
             </div>

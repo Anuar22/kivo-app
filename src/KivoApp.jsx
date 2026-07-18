@@ -76,7 +76,7 @@ function KivoShell() {
         {role === "customer" ? (
           <>
             <Navbar screen={screen} navigate={navigate} />
-            <div className="main-content">
+            <div className={`main-content screen-${screen}`}>
               {screen === "home"    && <Home navigate={navigate} />}
               {screen === "vendor" && <VendorPage vendor={selectedVendor} />}
               {screen === "cart"   && <Cart navigate={navigate} />}

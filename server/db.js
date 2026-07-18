@@ -176,6 +176,13 @@ async function migrate() {
     "alter table menu_items add column if not exists image_url text",
     "alter table menu_items add column if not exists prep_time_minutes int",
     "alter table reviews add column if not exists id serial",  // no-op if exists
+    // Delivery drop-pin coordinates (used when placing an order with fulfillmentType "delivery")
+    "alter table orders  add column if not exists delivery_lat numeric(10,7)",
+    "alter table orders  add column if not exists delivery_lng numeric(10,7)",
+    // ClickPesa mobile-money payment tracking
+    "alter table orders  add column if not exists clickpesa_payment_id text",
+    "alter table orders  add column if not exists payment_status text not null default 'pending'",
+    "alter table orders  add column if not exists payment_confirmed_at timestamptz",
     // Backfill: vendors that existed before this column was added shouldn't
     // suddenly vanish from the customer-facing list just because the column
     // defaults to false for everyone.
