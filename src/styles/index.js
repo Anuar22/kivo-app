@@ -338,7 +338,7 @@ const CSS = `
   /* Ensure the wrapper respects absolute zero boundaries */
   .cart-v2, .orders-v2 {
     margin-top: 0 !important;
-    padding-top: 24px !important; /* Flat pristine padding below browser bar */
+    padding-top: calc(var(--sat) + 24px) !important; /* Flat pristine padding below browser bar, plus safe-area for PWA standalone */
   }
     /* Eradicates any dark-gray themes left over in global sheets for sub-pages */
   .profile-page, .screen-card-soft {
@@ -419,27 +419,6 @@ p, span, .review-time, .review-text, .ov2-card-meta {
 .popular-badge {
   box-shadow: none !important;
 }
-
-/* Nuke the top whitespace completely on the vendor page */
-.vendor-page {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* Push the navigation bar right up to the top boundary */
-.vendor-nav-header {
-  top: 0 !important;
-  margin-top: -24px !important; /* Forces the header up to fill the layout gap */
-  padding-top: 16px !important;  /* Safe space padding so it doesn't clip the text */
-}
-
-/* Ensure the main page container doesn't force a gap */
-divhas(> .vendor-page) {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-
 `;
 
 export default CSS;

@@ -289,7 +289,7 @@ export default function Home({ navigate }) {
       )}
 
       {/* ── Clean Top Header ── */}
-      <div className="home-hero" style={{ paddingTop: "0px", paddingBottom: "16px", background: "#000000" }}>
+      <div className="home-hero" style={{ paddingTop: "0px", paddingBottom: "16px", background: "#000000", marginTop: "calc(-1 * var(--sat))" }}>
         <div className="home-topbar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", paddingTop: "8px" }}>
           
           {/* Profile Button (Left) */}
