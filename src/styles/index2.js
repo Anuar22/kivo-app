@@ -38,8 +38,6 @@ const CSS = `
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
     --sar: env(safe-area-inset-right, 0px);
-    /* Pre-computed nav height + safe area, so nothing needs to nest calc() inside calc() */
-    --nav-total: calc(var(--nav-h) + var(--sat));
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.35);
     --shadow-md: 0 12px 30px rgba(0,0,0,0.5);
 
@@ -254,7 +252,7 @@ const CSS = `
   }
 
   .main-content {
-    padding-top: var(--nav-total);
+    padding-top: calc(var(--nav-h) + var(--sat));
     padding-bottom: calc(var(--bot-h) + var(--sab));
     min-height: 100svh; 
     height: 100svh; 

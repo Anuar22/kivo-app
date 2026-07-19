@@ -199,7 +199,7 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
   const reviewCount  = vendor.review_count ?? vendor.reviews ?? 0;
 
   return (
-    <div className="page vendor-page" style={{ background: "#000000", minHeight: "100vh", color: "#ffffff", padding: "0 0 40px", marginTop: "calc(-1 * (var(--nav-h) + var(--sat)))", paddingTop: 0 }}>
+    <div className="page vendor-page" style={{ background: "#000000", minHeight: "100vh", color: "#ffffff", padding: "0 0 40px", marginTop: "calc(-1 * var(--nav-total))", paddingTop: 0 }}>
       
       {/* ── Premium Sticky Navigation Header ── */}
       <div className="vendor-nav-header" style={{ 
