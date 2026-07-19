@@ -332,7 +332,8 @@ const CSS = `
   }
   /* Neutralize global layout spacers specifically for your clean sub-pages */
   .main-content:has(.cart-v2),
-  .main-content:has(.orders-v2) {
+  .main-content:has(.orders-v2),
+  .main-content:has(.vendor-page) {
     padding-top: 0 !important;
     margin-top: 0 !important;
   }
@@ -341,6 +342,9 @@ const CSS = `
   .cart-v2, .orders-v2 {
     margin-top: 0 !important;
     padding-top: calc(var(--sat) + 24px) !important; /* Flat pristine padding below browser bar, plus safe-area for PWA standalone */
+  }
+  .vendor-page {
+    margin-top: 0 !important; /* main-content's padding-top is already killed above, so no negative margin needed */
   }
     /* Eradicates any dark-gray themes left over in global sheets for sub-pages */
   .profile-page, .screen-card-soft {
