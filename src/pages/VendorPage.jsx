@@ -168,6 +168,31 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
   const [revTotal, setRevTotal] = useState(0);
   const [revLoading, setRevLoading] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [debugInfo, setDebugInfo] = useState(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const root = getComputedStyle(document.documentElement);
+      const page = document.querySelector(".vendor-page");
+      const header = document.querySelector(".vendor-nav-header");
+      const mainContent = document.querySelector(".main-content");
+      setDebugInfo({
+        navH: root.getPropertyValue("--nav-h"),
+        sat: root.getPropertyValue("--sat"),
+        navTotal: root.getPropertyValue("--nav-total"),
+        standalone: window.matchMedia("(display-mode: standalone)").matches,
+        iosStandalone: window.navigator.standalone,
+        pageMarginTop: page ? getComputedStyle(page).marginTop : "n/a",
+        pagePaddingTop: page ? getComputedStyle(page).paddingTop : "n/a",
+        pageTop: page ? page.getBoundingClientRect().top.toFixed(1) : "n/a",
+        headerPaddingTop: header ? getComputedStyle(header).paddingTop : "n/a",
+        headerTop: header ? header.getBoundingClientRect().top.toFixed(1) : "n/a",
+        mainContentPaddingTop: mainContent ? getComputedStyle(mainContent).paddingTop : "n/a",
+        bodyClasses: document.body.className,
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!vendor) return;
@@ -200,6 +225,18 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
 
   return (
     <div className="page vendor-page" style={{ background: "#000000", minHeight: "100vh", color: "#ffffff", padding: "0 0 40px", marginTop: "calc(-1 * var(--nav-total))", paddingTop: 0 }}>
+
+      {/* ── TEMP DEBUG OVERLAY — remove after diagnosing spacing issue ── */}
+      {debugInfo && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999, background: "rgba(0,200,0,0.95)", color: "#000", fontSize: "11px", fontFamily: "monospace", padding: "6px 8px", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+{`--nav-h: ${debugInfo.navH} | --sat: ${debugInfo.sat} | --nav-total: ${debugInfo.navTotal}
+standalone(matchMedia): ${debugInfo.standalone} | navigator.standalone: ${debugInfo.iosStandalone}
+.vendor-page marginTop: ${debugInfo.pageMarginTop} | paddingTop: ${debugInfo.pagePaddingTop} | rect.top: ${debugInfo.pageTop}
+.vendor-nav-header paddingTop: ${debugInfo.headerPaddingTop} | rect.top: ${debugInfo.headerTop}
+.main-content paddingTop: ${debugInfo.mainContentPaddingTop}
+body classes: "${debugInfo.bodyClasses}"`}
+        </div>
+      )}
       
       {/* ── Premium Sticky Navigation Header ── */}
       <div className="vendor-nav-header" style={{ 
