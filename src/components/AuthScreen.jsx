@@ -284,7 +284,7 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo">Kivo</div>
+          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
           <p className="av2-tagline">Check your email</p>
         </div>
         <div className="av2-card">
@@ -314,7 +314,7 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo">Kivo</div>
+          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
           <p className="av2-tagline">Reset your password</p>
         </div>
         <div className="av2-card">
@@ -340,7 +340,7 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo">Kivo</div>
+          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
           <p className="av2-tagline">Enter your reset code</p>
         </div>
         <div className="av2-card">
@@ -373,8 +373,8 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo">Kivo</div>
-          <p className="av2-tagline">Welcome back! Sign in to continue</p>
+          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
+          <p className="av2-tagline">Welcome back!</p>
         </div>
         <div className="av2-card">
           <BackLink to="landing" label="Back" />
@@ -427,8 +427,8 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo">Kivo</div>
-          <p className="av2-tagline">One account for ordering and selling food</p>
+          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
+          {/* <p className="av2-tagline">One account for ordering and selling food</p> */}
         </div>
         <div className="av2-card">
           <BackLink to="landing" label="Back" />
