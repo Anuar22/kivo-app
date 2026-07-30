@@ -286,6 +286,7 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
             </span>
           )}
         </button>
+        
       </div>
 
       {/* Immersive Hero Header */}

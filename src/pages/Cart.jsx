@@ -201,8 +201,8 @@ function StripeCardForm({ amount, onSuccess, onCancel }) {
   );
 }
 
-// ── ClickPesa mobile money form ───────────────────────────────────────────────
-function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, defaultPhone }) {
+// ── Snippe mobile money form ──────────────────────────────────────────────────
+function SnippeForm({ amount, orderId, onSuccess, onCancel, defaultPhone }) {
   const [phone,    setPhone]    = useState(defaultPhone || "");
   const [status,   setStatus]   = useState("idle"); 
   const [message,   setMessage]  = useState("");
@@ -213,19 +213,19 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
     if (!phone.trim()) { setError("Enter your mobile money phone number."); return; }
     setError(""); setStatus("pushing");
     try {
-      const result = await paymentsApi.clickpesaPush({ orderId, amount, phoneNumber: phone.trim() });
+      const result = await paymentsApi.snippePush({ orderId, amount, phoneNumber: phone.trim() });
       setMessage(result.message || "Check your phone for a payment prompt.");
       setStatus("waiting");
       let attempts = 0;
       pollRef.current = setInterval(async () => {
         attempts++;
         try {
-          const statusResult = await paymentsApi.clickpesaStatus(orderRef);
-          if (statusResult.status === "SUCCESSFUL") {
+          const statusResult = await paymentsApi.snippeStatus(result.paymentReference);
+          if (statusResult.status === "completed") {
             clearInterval(pollRef.current);
             setStatus("done");
             onSuccess();
-          } else if (statusResult.status === "FAILED" || statusResult.status === "CANCELLED") {
+          } else if (statusResult.status === "failed" || statusResult.status === "voided" || statusResult.status === "expired") {
             clearInterval(pollRef.current);
             setStatus("failed");
             setError("Payment was not completed. Please try again.");
@@ -267,7 +267,7 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
   return (
     <div style={{ marginTop: "8px" }}>
       <p style={{ fontSize: "13px", color: "#a0a0a0", marginBottom: "12px", lineHeight: 1.6 }}>
-        Enter your mobile money number (M-Pesa, Tigo, Airtel, Halo). You'll receive a prompt to enter your PIN.
+        Enter your mobile money number (M-Pesa, Mixx by Yas, Airtel, Halotel). You'll receive a prompt to enter your PIN.
       </p>
       <div style={{ position: "relative", marginBottom: "8px" }}>
         <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "13px", color: "#a0a0a0", pointerEvents: "none" }}>📱</span>
@@ -294,7 +294,7 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
         </button>
       </div>
       <p style={{ fontSize: "11px", color: "#666", marginTop: "10px", textAlign: "center", lineHeight: 1.5 }}>
-        🔒 Powered by ClickPesa · Supports M-Pesa, Tigo, Airtel & Halopesa
+        🔒 Powered by Snippe · Supports M-Pesa, Mixx by Yas, Airtel & Halotel
       </p>
     </div>
   );
@@ -303,7 +303,7 @@ function ClickPesaForm({ amount, orderId, orderRef, onSuccess, onCancel, default
 // ── Pay methods ───────────────────────────────────────────────────────────────
 const PAY_METHODS = [
   { id: "cash",   label: "Cash on Delivery",detail: "Pay when your order arrives",   emoji: "💵" },
-  { id: "mobile", label: "Mobile Money",    detail: "M-Pesa · Tigo · Airtel · Halo", emoji: "📱" },
+  { id: "mobile", label: "Mobile Money",    detail: "M-Pesa · Mixx · Airtel · Halotel", emoji: "📱" },
   { id: "card",   label: "Card",            detail: "Visa or Mastercard",            render: () => <div className="pm-card-icons"><span className="pm-mc" /><span className="pm-visa" style={{ color: "#2563eb" }}>VISA</span></div> },
 ];
 
@@ -577,14 +577,13 @@ export default function Cart({ navigate }) {
           </div>
         )}
 
-        {/* ClickPesa mobile money form */}
+        {/* Snippe mobile money form */}
         {payMethod === "mobile" && showMobileForm && pendingOrder && (
           <div style={{ marginTop: "14px", background: "#121212", border: "1.5px solid #222", borderRadius: 14, padding: "16px 14px" }}>
             <p style={{ fontSize: "13px", fontWeight: 700, marginBottom: "10px", color: "#fff" }}>Mobile Money Payment</p>
-            <ClickPesaForm
+            <SnippeForm
               amount={grandTotal}
               orderId={pendingOrder.id}
-              orderRef={pendingOrder.ref}
               defaultPhone={user?.phone || ""}
               onSuccess={() => { setPlaced(true); setShowMobileForm(false); }}
               onCancel={() => { setShowMobileForm(false); setPendingOrder(null); }}

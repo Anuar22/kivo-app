@@ -32,7 +32,9 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf; }, // needed for Snippe webhook signature verification
+}));
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.use("/api/auth",    authRoutes);

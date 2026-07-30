@@ -181,6 +181,7 @@ async function migrate() {
     "alter table orders  add column if not exists delivery_lng numeric(10,7)",
     // ClickPesa mobile-money payment tracking
     "alter table orders  add column if not exists clickpesa_payment_id text",
+    "alter table orders  add column if not exists snippe_reference text",
     "alter table orders  add column if not exists payment_status text not null default 'pending'",
     "alter table orders  add column if not exists payment_confirmed_at timestamptz",
     // Backfill: vendors that existed before this column was added shouldn't

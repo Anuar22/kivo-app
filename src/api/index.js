@@ -91,8 +91,8 @@ export const ordersApi = {
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
 export const paymentsApi = {
   createStripeIntent:    (amount)          => apiRequest("/api/payments/stripe/intent", { method: "POST", body: { amount } }),
-  clickpesaPush:         (body)            => apiRequest("/api/payments/clickpesa/push", { method: "POST", body }),
-  clickpesaStatus:       (reference)       => apiRequest(`/api/payments/clickpesa/status?reference=${reference}`),
+  snippePush:            (body)            => apiRequest("/api/payments/snippe/push", { method: "POST", body }),
+  snippeStatus:          (reference)       => apiRequest(`/api/payments/snippe/status?reference=${encodeURIComponent(reference)}`),
 };
 
 // ─── ADMIN ───────────────────────────────────────────────────────────────────
