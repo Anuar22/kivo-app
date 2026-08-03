@@ -4,7 +4,7 @@ export function Navbar({ screen, navigate }) {
   const { count } = useCart();
   const titles = { vendor: "Restaurant", cart: "My Cart", orders: "My Orders", profile: "Profile" };
 
-  if (screen === "home" || screen === "profile" || screen === "orders" || screen === "following" || screen === "vendor" || screen === "cart") return null; // these have their own headers
+  if (screen === "home" || screen === "profile" || screen === "orders" || screen === "following" || screen === "vendor") return null; // these have their own headers
 
   return (
     <nav className="navbar">
