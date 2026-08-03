@@ -26,7 +26,10 @@ export default function VendorDashboard({ showToast }) {
         /* 🛠️ THE FIX: Neutralizes global layout spacer padding boundaries cleanly */
         margin: 0,
         padding: "0 16px 100px",
-        paddingTop: "24px",
+        /* 🛠️ Respects the device status bar / notch in PWA (standalone) and
+           regular mobile browsers alike; falls back to 24px where the
+           safe-area inset is unsupported or zero. */
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 24px)",
         fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
         boxSizing: "border-box"
       }}
