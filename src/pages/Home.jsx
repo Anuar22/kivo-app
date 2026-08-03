@@ -160,14 +160,14 @@ function RestaurantMapModal({ vendors, customerCoords, onVendorSelect, onClose }
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", flexDirection: "column", background: "#000000" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "#121212", borderBottom: "1px solid #222" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "16px 20px", paddingTop: "calc(var(--sat) + 16px)", background: "#121212", borderBottom: "1px solid #222" }}>
         <div>
           <p style={{ fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "Georgia,serif", color: "#ffffff" }}>🗺️ Restaurants Near You</p>
           <p style={{ fontSize: 12, color: "#a0a0a0", margin: "2px 0 0" }}>
             {mappableCount === 0 ? "No restaurants have set their location yet" : `${mappableCount} restaurant${mappableCount !== 1 ? "s" : ""} on the map`}
           </p>
         </div>
-        <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: "50%", background: "#222", border: "none", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>✕</button>
+        <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: "50%", background: "#222", border: "none", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>✕</button>
       </div>
 
       {/* Map */}
