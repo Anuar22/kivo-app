@@ -427,7 +427,7 @@ export default function AuthScreen() {
     return (
       <div className="auth-v2">
         <div className="av2-header">
-          <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div>
+          {/* <div className="av2-logo"><img src="/icons/auth-icon.png" alt="Kivo" style={{ width: 100, height: 100, borderRadius: 16 }} /></div> */}
           {/* <p className="av2-tagline">One account for ordering and selling food</p> */}
         </div>
         <div className="av2-card">
