@@ -522,10 +522,10 @@ export default function AuthScreen() {
       </div>
 
       {/* Buttons anchored to the bottom */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingBottom: 40 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: "auto", paddingBottom: 40 }}>
         <button 
           className="av2-submit" 
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", borderRadius: "8px" }} 
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", width: "60%", borderRadius: "8px" }} 
           onClick={() => goTo("register")}
         >
           Sign Up
@@ -533,7 +533,7 @@ export default function AuthScreen() {
         
         <button
           className="av2-google-btn"
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", borderRadius: "8px" }}
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", width: "60%", borderRadius: "8px" }}
           onClick={() => goTo("login")}
         >
           Sign In
