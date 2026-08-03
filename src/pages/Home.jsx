@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { vendorsApi } from "../api/index.js";
-import { categories, popularMeals } from "../data/index.js";
+import { categories } from "../data/index.js";
 import { fmt } from "../utils/currency.js";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -219,6 +219,8 @@ export default function Home({ navigate }) {
   const [vendors,         setVendors]         = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [favorites,       setFavorites]       = useState(new Set(JSON.parse(localStorage.getItem("kivo_favorites") || "[]")));
+  const [popularItems,    setPopularItems]    = useState([]);
+  const [popularLoading,  setPopularLoading]  = useState(true);
   const { coords, denied, hardBlocked, asking, request } = useCustomerLocation();
 
   useEffect(() => {
@@ -227,6 +229,13 @@ export default function Home({ navigate }) {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [coords]);
+
+  useEffect(() => {
+    vendorsApi.popularItems(8)
+      .then(({ items }) => setPopularItems(items))
+      .catch(() => {})
+      .finally(() => setPopularLoading(false));
+  }, []);
 
   const shape = (v) => ({
     ...v,
@@ -361,14 +370,25 @@ export default function Home({ navigate }) {
       </section>
 
       {/* ── Popular section with Auto-Scroll ── */}
-      {activeCategory === 1 && !search && (
+      {activeCategory === 1 && !search && (popularLoading || popularItems.length > 0) && (
         <section className="section" style={{ marginTop: "24px", padding: 0 }}>
           <div className="section-header" style={{ marginBottom: "16px", padding: "0 4px" }}>
             <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "19px", fontWeight: 800, margin: 0, color: "#ffffff", letterSpacing: "-0.3px" }}>
               🔥 Popular Right Now
             </h2>
           </div>
-          
+
+          {popularLoading ? (
+            <div style={{ display: "flex", gap: "14px", overflowX: "hidden" }}>
+              {[1, 2, 3].map(n => (
+                <div key={n} style={{ background: "#121212", borderRadius: "18px", padding: "16px", width: "150px", flexShrink: 0, border: "1px solid #1c1c1e" }}>
+                  <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#1c1c1e", marginBottom: "14px" }} />
+                  <div style={{ width: "80%", height: "12px", background: "#1c1c1e", borderRadius: "4px", marginBottom: "8px" }} />
+                  <div style={{ width: "60%", height: "10px", background: "#1c1c1e", borderRadius: "4px" }} />
+                </div>
+              ))}
+            </div>
+          ) : (
           <div 
             ref={(el) => {
               // Internal layout scroll loop handler
@@ -414,9 +434,9 @@ export default function Home({ navigate }) {
               scrollBehavior: "auto" // Keeps pixel-perfect layout increments smooth
             }} 
           >
-            {popularMeals.map(meal => (
+            {popularItems.map(item => (
               <div 
-                key={meal.id} 
+                key={item.id} 
                 className="popular-card" 
                 style={{ 
                   background: "#121212", 
@@ -428,11 +448,11 @@ export default function Home({ navigate }) {
                   border: "1px solid #1c1c1e"
                 }} 
                 onClick={() => {
-                  const v = vendors.find(v => v.id === meal.vendorId);
+                  const v = vendors.find(v => v.id === item.vendor_id);
                   if (v) navigate("vendor", shape(v));
                 }}
               >
-                {/* Accent circular badge for emoji */}
+                {/* Accent circular badge for image/emoji */}
                 <div style={{
                   width: "50px",
                   height: "50px",
@@ -442,27 +462,31 @@ export default function Home({ navigate }) {
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "26px",
-                  marginBottom: "14px"
+                  marginBottom: "14px",
+                  overflow: "hidden",
                 }}>
-                  {meal.image}
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : (item.image || "🍽️")}
                 </div>
                 <p className="popular-name" style={{ color: "#ffffff", fontSize: "14px", fontWeight: "700", margin: "0 0 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {meal.name}
+                  {item.name}
                 </p>
                 <p className="popular-vendor" style={{ color: "#a0a0a0", fontSize: "12px", margin: "0 0 14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {meal.vendorName}
+                  {item.vendor_name}
                 </p>
-                <div className="popular-bottom" style={{ display: "flex", justifycontent: "space-between", alignItems: "center" }}>
+                <div className="popular-bottom" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className="popular-price" style={{ color: "#e53935", fontSize: "15px", fontWeight: "800" }}>
-                    {fmt(meal.price)}
+                    {fmt(item.price)}
                   </span>
                   <span className="popular-rating" style={{ color: "#ffb300", fontSize: "12px", fontWeight: "600" }}>
-                    ★ {meal.rating}
+                    ★ {item.rating || "New"}
                   </span>
                 </div>
               </div>
             ))}
           </div>
+          )}
         </section>
       )}
 

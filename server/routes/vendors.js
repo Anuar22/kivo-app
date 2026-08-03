@@ -222,6 +222,62 @@ router.get("/", async (req, res) => {
   res.json({ vendors });
 });
 
+// GET /api/vendors/popular-items — public, used by Home's "Popular Right Now" section.
+// Primary signal: actual units sold (order_items.qty) in the last 7 days — reflects
+// real demand, not a static curated list. Falls back to vendor-flagged `popular` items
+// to fill out the list when there isn't 7 days of order volume yet (e.g. just launched).
+router.get("/popular-items", async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 8, 20);
+
+  try {
+    const { rows: bySales } = await pool.query(
+      `SELECT mi.id, mi.name, mi.price, mi.image, mi.image_url,
+              v.id AS vendor_id, v.name AS vendor_name, v.category, v.rating,
+              SUM(oi.qty) AS units_sold
+         FROM order_items oi
+         JOIN orders o      ON o.id = oi.order_id
+         JOIN menu_items mi ON mi.id = oi.menu_item_id
+         JOIN vendors v     ON v.id = mi.vendor_id
+        WHERE o.created_at >= NOW() - INTERVAL '7 days'
+          AND mi.available  = TRUE
+          AND v.is_open     = TRUE
+          AND v.is_approved = TRUE
+        GROUP BY mi.id, v.id
+        ORDER BY units_sold DESC
+        LIMIT $1`,
+      [limit]
+    );
+
+    let items = bySales.map(r => ({ ...r, source: "sales" }));
+
+    // Fill remaining slots with vendor-flagged popular items not already included
+    if (items.length < limit) {
+      const excludeIds = items.map(r => r.id);
+      const { rows: byFlag } = await pool.query(
+        `SELECT mi.id, mi.name, mi.price, mi.image, mi.image_url,
+                v.id AS vendor_id, v.name AS vendor_name, v.category, v.rating,
+                0 AS units_sold
+           FROM menu_items mi
+           JOIN vendors v ON v.id = mi.vendor_id
+          WHERE mi.popular    = TRUE
+            AND mi.available  = TRUE
+            AND v.is_open     = TRUE
+            AND v.is_approved = TRUE
+            ${excludeIds.length ? `AND mi.id != ALL($2::int[])` : ""}
+          ORDER BY v.rating DESC, mi.created_at DESC
+          LIMIT $1`,
+        excludeIds.length ? [limit - items.length, excludeIds] : [limit - items.length]
+      );
+      items = items.concat(byFlag.map(r => ({ ...r, source: "flagged" })));
+    }
+
+    res.json({ items });
+  } catch (err) {
+    console.error("popular-items error:", err.message);
+    res.status(500).json({ error: "Could not load popular items." });
+  }
+});
+
 // GET /api/vendors/:id/reviews — public, paginated
 router.get("/:id/reviews", async (req, res) => {
   const limit  = Math.min(Number(req.query.limit)  || 20, 50);

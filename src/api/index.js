@@ -66,6 +66,7 @@ export const vendorsApi = {
     return apiRequest(`/api/vendors${qs ? "?" + qs : ""}`);
   },
   get:           (id)        => apiRequest(`/api/vendors/${id}`),
+  popularItems:  (limit = 8) => apiRequest(`/api/vendors/popular-items?limit=${limit}`),
   myProfile:     ()          => apiRequest("/api/vendors/me/profile"),
   updateProfile: (body)      => apiRequest("/api/vendors/me/profile", { method: "PATCH", body }),
   uploadMenuPhoto:  (file)   => apiUpload("/api/vendors/me/menu/upload-photo", file),
