@@ -522,21 +522,21 @@ export default function AuthScreen() {
       </div>
 
       {/* Buttons anchored to the bottom */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "auto", paddingBottom: 40 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: "auto", paddingBottom: 40 }}>
         <button 
           className="av2-submit" 
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", height: "50px", borderRadius: "8px" }} 
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", borderRadius: "8px" }} 
           onClick={() => goTo("register")}
         >
-          Create an account
+          Sign Up
         </button>
         
         <button
           className="av2-google-btn"
-          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", height: "50px", borderRadius: "8px" }}
+          style={{ background: "#ffffff", color: "#dc2626", fontWeight: "600", fontSize: "14px", height: "40px", borderRadius: "8px" }}
           onClick={() => goTo("login")}
         >
-          I already have an account
+          Sign In
         </button>
       </div>
     </div>
