@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { pool } = require("../db");
 const { auth, requireRole } = require("../middleware/auth");
+const { sendPush } = require("../push");
 // SSE emitters — lazy-required to avoid circular deps at startup
 function sse() { return require("./sse"); }
 
@@ -138,6 +139,20 @@ router.post("/", auth, requireRole("customer"), async (req, res) => {
     await client.query("COMMIT");
     const placed = await fullOrder(order.id);
     sse().emitNewOrder(placed);
+
+    // ── Notify the vendor about the new order ─────────────────────────────
+    pool.query(
+      `INSERT INTO notifications (user_id, vendor_id, type, title, body)
+       VALUES ($1, $2, 'new_order', $3, $4)`,
+      [vRows[0].user_id, vRows[0].id, "New order! 🛎️", `Order ${placed.ref} just came in — ${items.length} item${items.length > 1 ? "s" : ""}, ${total} total.`]
+    ).catch(err => console.error("Notification insert error:", err.message));
+
+    sendPush(vRows[0].user_id, {
+      title: "New order! 🛎️",
+      body: `Order ${placed.ref} just came in.`,
+      url: "/vendor",
+    }).catch(err => console.error("Push send error:", err.message));
+
     res.status(201).json({ order: placed });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -246,6 +261,12 @@ router.patch("/:id/status", auth, requireRole("vendor"), async (req, res) => {
        VALUES ($1, $2, 'order_status', $3, $4)`,
       [oRows[0].customer_id, vRows[0].id, msg.title, msg.body]
     ).catch(err => console.error("Notification insert error:", err.message));
+
+    sendPush(oRows[0].customer_id, {
+      title: msg.title,
+      body: msg.body,
+      url: `/orders/${updated.id}`,
+    }).catch(err => console.error("Push send error:", err.message));
   }
 
   res.json({ order: updated });
@@ -261,6 +282,18 @@ router.delete("/:id", auth, requireRole("vendor"), async (req, res) => {
   if (rows[0]) {
     const updated = await fullOrder(rows[0].id);
     sse().emitOrderUpdate(updated);
+
+    pool.query(
+      `INSERT INTO notifications (user_id, vendor_id, type, title, body)
+       VALUES ($1, $2, 'order_status', $3, $4)`,
+      [updated.customer_id, updated.vendor_id, "Order cancelled", `${updated.vendor_name} cancelled your order ${updated.ref}.`]
+    ).catch(err => console.error("Notification insert error:", err.message));
+
+    sendPush(updated.customer_id, {
+      title: "Order cancelled",
+      body: `${updated.vendor_name} cancelled your order ${updated.ref}.`,
+      url: `/orders/${updated.id}`,
+    }).catch(err => console.error("Push send error:", err.message));
   }
   res.json({ ok: true });
 });

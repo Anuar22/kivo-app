@@ -6,6 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['/favicon.svg', '/icons/*.png'],
@@ -58,58 +61,8 @@ export default defineConfig({
         ],
         categories: ['food', 'lifestyle', 'shopping'],
       },
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        runtimeCaching: [
-          // 1. BULLETPROOF CATCH-ALL: This function intercepts EVERY request and completely 
-          // exempts anything going to Render or containing /api/ from being cached or blocked.
-          {
-            urlPattern: ({ url }) => {
-              const isRenderBackend = url.hostname.includes('kivo-backend-9h1x.onrender.com');
-              const isLocalApiPath = url.pathname.startsWith('/api/');
-              return isRenderBackend || isLocalApiPath;
-            },
-            handler: 'NetworkOnly',
-            options: {
-              backgroundSync: {
-                name: 'order-queue',
-                options: {
-                  maxRetentionTime: 24 * 60
-                }
-              }
-            }
-          },
-          // 2. Mapbox Tiles
-          {
-            urlPattern: /^https:\/\/api\.mapbox\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'mapbox-tiles',
-              expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
-            },
-          },
-          // 3. Cloudinary Images
-          {
-            urlPattern: /^https:\/\/res\.cloudinary\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'cloudinary-images',
-              expiration: { maxEntries: 100, maxAgeSeconds: 604800 },
-            },
-          },
-          // 4. Google Fonts
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 31536000 },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: false,

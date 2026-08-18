@@ -11,6 +11,7 @@ const adminRoutes   = require("./routes/admin");
 const followRoutes  = require("./routes/follows");
 const notificationRoutes = require("./routes/notifications");
 const { router: sseRouter } = require("./routes/sse");
+const pushRoutes = require("./routes/push");
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/admin",   adminRoutes);
 app.use("/api/follows", followRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sse",     sseRouter);
+app.use("/api/push",    pushRoutes);
 
 app.get("/health", (_, res) => res.json({ ok: true, ts: new Date() }));
 

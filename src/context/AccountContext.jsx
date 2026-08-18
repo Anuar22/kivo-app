@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { authApi } from "../api/index.js";
+import { enablePushNotifications, disablePushNotifications } from "../push.js";
 
 const AccountCtx = createContext(null);
 
@@ -13,7 +14,10 @@ export function AccountProvider({ children }) {
     if (!token) { setInitializing(false); return; }
 
     authApi.me()
-      .then(({ user }) => setUser(user))
+      .then(({ user }) => {
+        setUser(user);
+        enablePushNotifications().catch(() => {});
+      })
       .catch(() => localStorage.removeItem("kivo_token"))
       .finally(() => setInitializing(false));
   }, []);
@@ -21,6 +25,8 @@ export function AccountProvider({ children }) {
   const completeAuth = ({ user, token }) => {
     localStorage.setItem("kivo_token", token);
     setUser(user);
+    // Fire-and-forget — a denied/ignored permission prompt shouldn't block login.
+    enablePushNotifications().catch(() => {});
   };
 
   // Register no longer logs the user in immediately — it returns
@@ -65,6 +71,7 @@ export function AccountProvider({ children }) {
   };
 
   const logout = () => {
+    disablePushNotifications().catch(() => {});
     localStorage.removeItem("kivo_token");
     setUser(null);
   };

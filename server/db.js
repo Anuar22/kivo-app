@@ -148,6 +148,17 @@ async function migrate() {
 
     CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications(user_id);
 
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id          SERIAL PRIMARY KEY,
+      user_id     INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint    TEXT NOT NULL UNIQUE,
+      p256dh      TEXT NOT NULL,
+      auth        TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON push_subscriptions(user_id);
+
     -- Keep updated_at current automatically
     CREATE OR REPLACE FUNCTION set_updated_at()
     RETURNS TRIGGER AS $$
