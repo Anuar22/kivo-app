@@ -134,6 +134,16 @@ const CSS = `
   .av2-input:focus { border-color: var(--orange); background: var(--surface-alt); }
   .av2-input::placeholder { color: var(--on-surface-faint); }
 
+  .av2-input-wrap { position: relative; display: flex; align-items: center; }
+  .av2-input-wrap .av2-input { padding-right: 42px; }
+  .av2-eye-btn {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; padding: 6px; margin: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--on-surface-faint);
+  }
+  .av2-eye-btn:hover { color: var(--on-surface); }
+
   .av2-error {
     background: var(--chip-bg); color: #ef5350; border: 1px solid #5c1d1d;
     border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.4;

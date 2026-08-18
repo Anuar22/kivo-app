@@ -3,11 +3,52 @@ import { useAccount } from "../context/AccountContext.jsx";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-function Field({ label, ...props }) {
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8"/>
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a20.3 20.3 0 0 1 5.06-5.94M9.9 4.24A10.4 10.4 0 0 1 12 4c7 0 11 7 11 7a20.3 20.3 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M1 1l22 22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function Field({ label, type, ...props }) {
+  const [show, setShow] = useState(false);
+  const isPassword = type === "password";
+
+  if (!isPassword) {
+    return (
+      <div className="av2-field">
+        <label className="av2-label">{label}</label>
+        <input className="av2-input" type={type} {...props} />
+      </div>
+    );
+  }
+
   return (
     <div className="av2-field">
       <label className="av2-label">{label}</label>
-      <input className="av2-input" {...props} />
+      <div className="av2-input-wrap">
+        <input className="av2-input" type={show ? "text" : "password"} {...props} />
+        <button
+          type="button"
+          className="av2-eye-btn"
+          onClick={() => setShow(s => !s)}
+          tabIndex={-1}
+          aria-label={show ? "Hide password" : "Show password"}
+        >
+          {show ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
     </div>
   );
 }
