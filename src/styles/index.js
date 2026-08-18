@@ -297,9 +297,45 @@ const CSS = `
   .hv2-card-cat { font-size: 12px; color: var(--on-surface-muted); }
 
   /* ── VENDOR DASHBOARD ── */
+  .vd-header { background: var(--surface); padding: calc(16px + var(--sat)) 16px 16px; }
+  .vd-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .vd-logo { font-family: var(--font-heading); font-weight: 800; font-size: 20px; color: #fff; }
+  .vd-logo span { color: var(--orange); font-weight: 700; }
+  .vendor-badge { display: flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 100px; padding: 7px 14px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+  .online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .dashboard-surface { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+  .dashboard-surface .label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--orange); margin-bottom: 6px; }
+  .dashboard-surface .title { font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .dashboard-surface .copy { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .vd-tabs { display: flex; gap: 8px; background: var(--card); padding: 4px; border-radius: 14px; border: 1px solid var(--border); }
+  .vd-tab { flex: 1; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; padding: 9px 0; border-radius: 11px; cursor: pointer; font-family: var(--font-body); transition: all 0.2s; }
+  .vd-tab.active { background: var(--orange); color: #fff; }
+
   .vd-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; background: var(--surface); min-height: 100svh; color: #fff; }
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .stat-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 14px; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 700; font-family: var(--font-heading); }
+
+  .empty-orders { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--muted); text-align: center; gap: 8px; }
+  .empty-orders .emoji { font-size: 32px; }
+
   .vorder-card { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .vorder-card-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 14px; gap: 10px; }
+  .vorder-card-id { font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 2px; }
+  .vorder-card-customer { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+  .vorder-card-time { font-size: 12px; color: var(--muted); }
+  .vorder-card-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-top: 1px solid var(--border); }
+
+  .vorder-status-pill { font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 100px; white-space: nowrap; }
+  .vpill-ready { background: var(--green-soft); color: var(--green); }
+  .vpill-pending { background: rgba(245, 158, 11, 0.18); color: var(--yellow); }
+  .vpill-cancel { background: var(--red-soft); color: var(--red); }
+
+  .action-btns { display: flex; gap: 8px; }
+  .btn-accept, .btn-reject { border: none; border-radius: 100px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: var(--font-body); }
+  .btn-accept { background: var(--orange); color: #fff; }
+  .btn-reject { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
   
   /* ── SUCCESS MODAL ── */
   .success-modal-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,15,15,0.75); display: flex; align-items: center; justify-content: center; padding: 24px; }

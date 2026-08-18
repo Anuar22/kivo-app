@@ -38,6 +38,8 @@ const CSS = `
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
     --sar: env(safe-area-inset-right, 0px);
+    /* Pre-computed nav height + safe area, so nothing needs to nest calc() inside calc() */
+    --nav-total: calc(var(--nav-h) + var(--sat));
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 8px 20px rgba(0,0,0,0.35);
     --shadow-md: 0 12px 30px rgba(0,0,0,0.5);
 
@@ -252,7 +254,7 @@ const CSS = `
   }
 
   .main-content {
-    padding-top: calc(var(--nav-h) + var(--sat));
+    padding-top: var(--nav-total);
     padding-bottom: calc(var(--bot-h) + var(--sab));
     min-height: 100svh; 
     height: 100svh; 
@@ -330,7 +332,8 @@ const CSS = `
   }
   /* Neutralize global layout spacers specifically for your clean sub-pages */
   .main-content:has(.cart-v2),
-  .main-content:has(.orders-v2) {
+  .main-content:has(.orders-v2),
+  .main-content:has(.vendor-page) {
     padding-top: 0 !important;
     margin-top: 0 !important;
   }
@@ -338,7 +341,10 @@ const CSS = `
   /* Ensure the wrapper respects absolute zero boundaries */
   .cart-v2, .orders-v2 {
     margin-top: 0 !important;
-    padding-top: 24px !important; /* Flat pristine padding below browser bar */
+    padding-top: calc(var(--sat) + 24px) !important; /* Flat pristine padding below browser bar, plus safe-area for PWA standalone */
+  }
+  .vendor-page {
+    margin-top: 0 !important; /* main-content's padding-top is already killed above, so no negative margin needed */
   }
     /* Eradicates any dark-gray themes left over in global sheets for sub-pages */
   .profile-page, .screen-card-soft {
@@ -419,27 +425,6 @@ p, span, .review-time, .review-text, .ov2-card-meta {
 .popular-badge {
   box-shadow: none !important;
 }
-
-/* Nuke the top whitespace completely on the vendor page */
-.vendor-page {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-/* Push the navigation bar right up to the top boundary */
-.vendor-nav-header {
-  top: 0 !important;
-  margin-top: -24px !important; /* Forces the header up to fill the layout gap */
-  padding-top: 16px !important;  /* Safe space padding so it doesn't clip the text */
-}
-
-/* Ensure the main page container doesn't force a gap */
-divhas(> .vendor-page) {
-  padding-top: 0 !important;
-  margin-top: 0 !important;
-}
-
-
 `;
 
 export default CSS;
