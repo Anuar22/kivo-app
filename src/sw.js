@@ -16,22 +16,16 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 // 1. Never cache the backend / API — always hit the network, with background
 //    sync so queued writes (e.g. placing an order while offline) retry later.
+const orderQueueSync = new BackgroundSyncPlugin("order-queue", { maxRetentionTime: 24 * 60 });
+
 registerRoute(
   ({ url }) => url.hostname.includes("kivo-backend-9h1x.onrender.com") || url.pathname.startsWith("/api/"),
-  new NetworkOnly({
-    plugins: [
-      new BackgroundSyncPlugin("order-queue", { maxRetentionTime: 24 * 60 }),
-    ],
-  }),
+  new NetworkOnly({ plugins: [orderQueueSync] }),
   "GET"
 );
 registerRoute(
   ({ url }) => url.hostname.includes("kivo-backend-9h1x.onrender.com") || url.pathname.startsWith("/api/"),
-  new NetworkOnly({
-    plugins: [
-      new BackgroundSyncPlugin("order-queue", { maxRetentionTime: 24 * 60 }),
-    ],
-  }),
+  new NetworkOnly({ plugins: [orderQueueSync] }),
   "POST"
 );
 
