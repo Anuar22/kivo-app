@@ -70,8 +70,10 @@ export function AccountProvider({ children }) {
     return data;
   };
 
-  const logout = () => {
-    disablePushNotifications().catch(() => {});
+  const logout = async () => {
+    // Must unsubscribe (needs the auth token) BEFORE clearing it —
+    // otherwise the request goes out with no Authorization header.
+    await disablePushNotifications().catch(() => {});
     localStorage.removeItem("kivo_token");
     setUser(null);
   };
