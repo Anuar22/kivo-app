@@ -89,7 +89,7 @@ router.get("/vendor/history", auth, requireRole("vendor"), async (req, res) => {
 
 // POST /api/orders
 router.post("/", auth, requireRole("customer"), async (req, res) => {
-  const { vendorId, items, address, paymentMethod = "cash", deliveryLat = null, deliveryLng = null } = req.body;
+  const { vendorId, items, address, paymentMethod = "cash", fulfillmentType = "delivery", deliveryLat = null, deliveryLng = null } = req.body;
   if (!vendorId || !items?.length || !address) {
     return res.status(400).json({ error: "vendorId, items and address are required." });
   }
@@ -122,9 +122,9 @@ router.post("/", auth, requireRole("customer"), async (req, res) => {
     }
 
     const { rows: oRows } = await client.query(
-      `INSERT INTO orders (ref, customer_id, vendor_id, address, delivery_lat, delivery_lng, payment_method, subtotal, delivery_fee, total)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [ref, req.user.id, vendorId, address, deliveryLat, deliveryLng, paymentMethod, subtotal, deliveryFee, total]
+      `INSERT INTO orders (ref, customer_id, vendor_id, address, delivery_lat, delivery_lng, payment_method, fulfillment_type, subtotal, delivery_fee, total)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [ref, req.user.id, vendorId, address, deliveryLat, deliveryLng, paymentMethod, fulfillmentType, subtotal, deliveryFee, total]
     );
     const order = oRows[0];
 

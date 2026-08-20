@@ -500,7 +500,7 @@ export default function Cart({ navigate }) {
           <button type="button" onClick={() => setFulfillment("delivery")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "delivery" ? "#e53935" : "transparent", boxShadow: fulfillment === "delivery" ? "0 2px 6px rgba(0,0,0,0.3)" : "none", color: fulfillment === "delivery" ? "#ffffff" : "#a0a0a0", transition: "0.2s" }}>
             🛵 Delivery
           </button>
-          <button type="button" onClick={() => setFulfillment("pickup")} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#e53935" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.3)" : "none", color: fulfillment === "pickup" ? "#ffffff" : "#a0a0a0", transition: "0.2s" }}>
+          <button type="button" onClick={() => { setFulfillment("pickup"); setShowPicker(false); }} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 9, fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "DM Sans", background: fulfillment === "pickup" ? "#e53935" : "transparent", boxShadow: fulfillment === "pickup" ? "0 2px 6px rgba(0,0,0,0.3)" : "none", color: fulfillment === "pickup" ? "#ffffff" : "#a0a0a0", transition: "0.2s" }}>
             🛍️ Self Pick-Up
           </button>
         </div>

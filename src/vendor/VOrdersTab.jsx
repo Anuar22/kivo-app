@@ -53,8 +53,30 @@ function OrderCard({ order, onAdvance, onReject, showActions }) {
     const m = Math.floor((Date.now() - new Date(ts)) / 60000);
     return m < 1 ? "Just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
+
+  const minutesOld = order.created_at ? Math.floor((Date.now() - new Date(order.created_at)) / 60000) : 0;
+  const isUrgent = order.status === "Pending" && minutesOld >= 10;
+
+  const isPickup = order.fulfillment_type === "pickup";
+  const paymentLabel = { cash: "Cash", card: "Card", mobile: "Mobile Money" }[order.payment_method] || order.payment_method;
+
   return (
-    <div className="vorder-card" style={{ background: "#121212", border: "1px solid #222222", borderRadius: "16px", marginBottom: "14px", overflow: "hidden", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
+    <div
+      className="vorder-card"
+      style={{
+        background: "#121212",
+        border: isUrgent ? "1px solid rgba(239, 68, 68, 0.5)" : "1px solid #222222",
+        borderRadius: "16px",
+        marginBottom: "14px",
+        overflow: "hidden",
+        boxShadow: isUrgent ? "0 0 0 1px rgba(239,68,68,0.15), 0 4px 12px rgba(0,0,0,0.3)" : "0 4px 12px rgba(0,0,0,0.3)",
+      }}
+    >
+      {isUrgent && (
+        <div style={{ background: "rgba(239, 68, 68, 0.12)", color: "#ef4444", fontSize: "11px", fontWeight: "700", padding: "6px 16px", display: "flex", alignItems: "center", gap: "5px" }}>
+          ⏱️ Waiting {minutesOld} min — needs attention
+        </div>
+      )}
       <div className="vorder-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "16px", borderBottom: "1px solid #1a1a1a" }}>
         <div>
           <div className="vorder-card-id" style={{ color: "#ffffff", fontWeight: "800", fontSize: "15px", letterSpacing: "-0.2px" }}>{order.ref || order.id}</div>
@@ -64,7 +86,16 @@ function OrderCard({ order, onAdvance, onReject, showActions }) {
         <VStatusPill status={order.status} />
       </div>
 
-      <div className="vorder-items-list" style={{ background: "#0a0a0a", padding: "12px 16px" }}>
+      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", padding: "10px 16px 0" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: isPickup ? "rgba(37, 99, 235, 0.12)" : "rgba(22, 163, 74, 0.12)", color: isPickup ? "#2563eb" : "#16a34a", fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "7px" }}>
+          {isPickup ? "🏪 Self Pick-Up" : "🛵 Delivery"}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "#1a1a1a", color: "#a0a0a0", fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "7px" }}>
+          💳 {paymentLabel}
+        </span>
+      </div>
+
+      <div className="vorder-items-list" style={{ background: "#0a0a0a", padding: "12px 16px", marginTop: "10px" }}>
         {order.items?.map((item, i) => (
           <div key={i} className="vorder-item-row" style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "4px 0", color: "#a0a0a0" }}>
             <span><span className="qty" style={{ color: "#e53935", fontWeight: "700", marginRight: "6px" }}>{item.qty}×</span>{item.name}</span>
@@ -73,7 +104,7 @@ function OrderCard({ order, onAdvance, onReject, showActions }) {
         ))}
       </div>
 
-      {(order.address || order.delivery_address) && (
+      {!isPickup && (order.address || order.delivery_address) && (
         <div style={{ padding: "12px 16px 4px", fontSize: "12px", color: "#a0a0a0", borderTop: "1px solid #1a1a1a" }}>
           📍 {order.address || order.delivery_address}
         </div>

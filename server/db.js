@@ -95,12 +95,16 @@ async function migrate() {
       status        TEXT NOT NULL DEFAULT 'Pending', -- Pending|Accepted|Cooking|Ready|Delivered
       address       TEXT,
       payment_method TEXT DEFAULT 'cash',
+      fulfillment_type TEXT NOT NULL DEFAULT 'delivery', -- 'delivery' | 'pickup'
       subtotal      NUMERIC(8,2) NOT NULL,
       delivery_fee  NUMERIC(6,2) NOT NULL DEFAULT 2.00,
       total         NUMERIC(8,2) NOT NULL,
       created_at    TIMESTAMPTZ DEFAULT NOW(),
       updated_at    TIMESTAMPTZ DEFAULT NOW()
     );
+
+    -- Adds fulfillment_type to orders tables that already existed before this column did
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS fulfillment_type TEXT NOT NULL DEFAULT 'delivery';
 
     CREATE TABLE IF NOT EXISTS order_items (
       id          SERIAL PRIMARY KEY,
