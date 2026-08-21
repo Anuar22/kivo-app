@@ -134,7 +134,7 @@ export default function Search({ navigate }) {
               </div>
             )}
 
-            {/* Trending / most loved */}
+            {/* Trending / most loved things */}
             <div style={{ marginBottom: 28 }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, margin: "0 0 10px" }}>🔥 Most loved right now</h3>
               {trendingLoading ? (
