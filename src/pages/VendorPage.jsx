@@ -193,10 +193,21 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
   if (!vendor) return null;
 
   const popular      = menu.filter(i => i.popular || Number(i.order_count) >= 5);
-  const tagColor     = vendor.tag_color ?? vendor.tagColor ?? "#e53935";
   const deliveryFee  = Number(vendor.delivery_fee ?? vendor.deliveryFee ?? 2);
   const deliveryTime = vendor.delivery_time ?? vendor.deliveryTime ?? "20–35 min";
   const reviewCount  = vendor.review_count ?? vendor.reviews ?? 0;
+  const ratingValue  = Number(vendor.rating);
+
+  // Vendors can set their own free-text tagline (e.g. "🔥 Hot & Fresh") in their
+  // profile — if they have, always show that. Otherwise, compute a real badge
+  // from their actual numbers rather than defaulting to a claim they haven't earned.
+  const badge = vendor.tag
+    ? { text: vendor.tag, color: vendor.tag_color ?? vendor.tagColor ?? "#e53935" }
+    : reviewCount >= 5 && ratingValue >= 4.7
+      ? { text: "⭐ Top Rated", color: "#f59e0b" }
+      : reviewCount === 0
+        ? { text: "🆕 New", color: "#3b82f6" }
+        : null;
 
   return (
     <div className="page vendor-page" style={{ background: "#000000", minHeight: "100vh", color: "#ffffff", padding: "0 0 40px", marginTop: 0, paddingTop: 0 }}>
@@ -293,11 +304,11 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
       <div className="vendor-hero" style={{ position: "relative", height: "220px", background: "#0a0a0a", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "flex-end", padding: "24px 16px" }}>
         <div className="vendor-hero-art" style={{ position: "absolute", inset: 0, opacity: 0.15, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "120px", pointerEvents: "none" }}>{vendor.image}</div>
         <div className="vendor-hero-overlay" style={{ position: "relative", zIndex: 2, width: "100%" }}>
-          <span className="vendor-hero-tag" style={{ background: tagColor, color: "#ffffff", padding: "4px 10px", borderRadius: "8px", fontSize: "11px", fontWeight: "700", display: "inline-block", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{vendor.tag || "TOP RATED"}</span>
+          {badge && <span className="vendor-hero-tag" style={{ background: badge.color, color: "#ffffff", padding: "4px 10px", borderRadius: "8px", fontSize: "11px", fontWeight: "700", display: "inline-block", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{badge.text}</span>}
           <h2 style={{ margin: "0 0 4px", fontSize: "24px", fontWeight: "800", color: "#ffffff", fontFamily: "var(--font-heading)" }}>{vendor.name}</h2>
           <p style={{ margin: "0 0 14px", color: "#a0a0a0", fontSize: "13px", lineHeight: "1.4" }}>{vendor.description}</p>
           <div className="vendor-hero-meta" style={{ display: "flex", gap: "16px", fontSize: "12px", color: "#ffffff", fontWeight: "600", alignItems: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: "#f59e0b" }}>⭐</span> {vendor.rating} <span style={{ color: "#666666" }}>({reviewCount})</span></span>
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}><span style={{ color: "#f59e0b" }}>⭐</span> {reviewCount > 0 ? ratingValue.toFixed(1) : "New"} {reviewCount > 0 && <span style={{ color: "#666666" }}>({reviewCount})</span>}</span>
             <span>⏱ {deliveryTime}</span>
             <span style={{ color: "#e53935" }}>🛵 {fmt(deliveryFee)} delivery</span>
           </div>
@@ -345,12 +356,14 @@ export default function VendorPage({ vendor, deliveredOrderId, navigate }) {
         {tab === "reviews" && (
           <div className="reviews-content">
             <div className="reviews-summary" style={{ display: "flex", alignItems: "center", gap: "16px", background: "#121212", padding: "16px", borderRadius: "16px", border: "1px solid #1a1a1a", marginBottom: "20px" }}>
-              <div className="reviews-score" style={{ fontSize: "36px", fontWeight: "900", color: "#ffffff" }}>{vendor.rating}</div>
+              <div className="reviews-score" style={{ fontSize: "36px", fontWeight: "900", color: "#ffffff" }}>{reviewCount > 0 ? ratingValue.toFixed(1) : "—"}</div>
               <div>
                 <div className="reviews-stars" style={{ fontSize: "14px", marginBottom: "2px", color: "#f59e0b" }}>
-                  {"★".repeat(Math.round(Number(vendor.rating)))}{"☆".repeat(5 - Math.round(Number(vendor.rating)))}
+                  {reviewCount > 0
+                    ? `${"★".repeat(Math.round(ratingValue))}${"☆".repeat(5 - Math.round(ratingValue))}`
+                    : "☆☆☆☆☆"}
                 </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "#a0a0a0", fontWeight: "600" }}>{reviewCount} {reviewCount === 1 ? "review" : "reviews"}</p>
+                <p style={{ margin: 0, fontSize: "13px", color: "#a0a0a0", fontWeight: "600" }}>{reviewCount > 0 ? `${reviewCount} ${reviewCount === 1 ? "review" : "reviews"}` : "No reviews yet"}</p>
               </div>
             </div>
 

@@ -6,6 +6,7 @@ import CSS from "./styles/index.js";
 import AuthScreen from "./components/AuthScreen.jsx";
 import { Navbar, BottomNav } from "./components/Navigation.jsx";
 import Home from "./pages/Home.jsx";
+import Search from "./pages/Search.jsx";
 import VendorPage from "./pages/VendorPage.jsx";
 import Cart from "./pages/Cart.jsx";
 import Orders from "./pages/Orders.jsx";
@@ -78,6 +79,7 @@ function KivoShell() {
             <Navbar screen={screen} navigate={navigate} />
             <div className={`main-content screen-${screen}`}>
               {screen === "home"    && <Home navigate={navigate} />}
+              {screen === "search"  && <Search navigate={navigate} />}
               {screen === "vendor" && <VendorPage vendor={selectedVendor} />}
               {screen === "cart"   && <Cart navigate={navigate} />}
               {screen === "orders" && <Orders />}

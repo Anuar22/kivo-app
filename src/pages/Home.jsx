@@ -328,8 +328,7 @@ export default function Home({ navigate }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{ color: "#ffffff", background: "transparent", border: "none", outline: "none", flex: 1, fontSize: "14px" }}
-              onFocus={(e) => e.target.parentElement.style.borderColor = "#e53935"}
-              onBlur={(e) => e.target.parentElement.style.borderColor = "#222"}
+              onFocus={(e) => { e.target.blur(); navigate("search"); }}
             />
             {search && <button className="clear-search" onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "#e53935", cursor: "pointer" }}>✕</button>}
           </div>

@@ -222,6 +222,46 @@ router.get("/", async (req, res) => {
   res.json({ vendors });
 });
 
+// GET /api/vendors/search?q=... — public. Searches vendor names/categories AND
+// menu item names across every open, approved vendor in one go.
+router.get("/search", async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (!q) return res.json({ vendors: [], items: [] });
+
+  const like = `%${q}%`;
+
+  try {
+    const { rows: vendors } = await pool.query(
+      `SELECT v.*
+         FROM vendors v
+        WHERE v.is_open = TRUE AND v.is_approved = TRUE
+          AND (v.name ILIKE $1 OR v.category ILIKE $1)
+        ORDER BY v.rating DESC
+        LIMIT 20`,
+      [like]
+    );
+
+    const { rows: items } = await pool.query(
+      `SELECT mi.id, mi.name, mi.price, mi.image, mi.image_url,
+              v.id AS vendor_id, v.name AS vendor_name, v.category, v.rating
+         FROM menu_items mi
+         JOIN vendors v ON v.id = mi.vendor_id
+        WHERE mi.available  = TRUE
+          AND v.is_open     = TRUE
+          AND v.is_approved = TRUE
+          AND mi.name ILIKE $1
+        ORDER BY v.rating DESC
+        LIMIT 30`,
+      [like]
+    );
+
+    res.json({ vendors, items });
+  } catch (err) {
+    console.error("vendor search error:", err.message);
+    res.status(500).json({ error: "Search failed. Please try again." });
+  }
+});
+
 // GET /api/vendors/popular-items — public, used by Home's "Popular Right Now" section.
 // Primary signal: actual units sold (order_items.qty) in the last 7 days — reflects
 // real demand, not a static curated list. Falls back to vendor-flagged `popular` items
