@@ -97,8 +97,9 @@ export default function Search({ navigate }) {
 
   return (
     <div style={{ background: "#000000", minHeight: "100vh", color: "#ffffff", paddingBottom: 40 }}>
-      {/* Sticky header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 5, background: "#000000", borderBottom: "1px solid #141414", padding: "calc(var(--sat) + 12px) 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Fixed header — mirrors the app's bottom-nav-v2 technique so it stays
+          pinned correctly within the centered phone-frame layout on desktop too. */}
+      <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 420, zIndex: 20, background: "#000000", borderBottom: "1px solid #141414", padding: "calc(var(--sat) + 12px) 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
         <button onClick={clearingBack} style={{ background: "none", border: "none", color: "#ffffff", padding: 4, cursor: "pointer", display: "flex" }} aria-label="Back">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
@@ -116,6 +117,9 @@ export default function Search({ navigate }) {
           )}
         </div>
       </div>
+
+      {/* Spacer so content starts below the fixed header instead of sliding under it */}
+      <div style={{ height: "calc(var(--sat) + 66px)" }} />
 
       <div style={{ padding: "16px" }}>
         {showBrowse && (

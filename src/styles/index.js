@@ -279,6 +279,10 @@ const CSS = `
     padding-bottom: calc(92px + var(--sab));
     background: #000000;
   }
+  .main-content.screen-search {
+    padding-top: 0;
+    background: #000000;
+  }
   .page { padding: 0; padding-bottom: 100px; }
   .screen-shell { padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 12px; }
   .screen-card {
