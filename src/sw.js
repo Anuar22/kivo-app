@@ -6,7 +6,6 @@ import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
 import { CacheFirst, NetworkOnly } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
-import { BackgroundSyncPlugin } from "workbox-background-sync";
 
 self.skipWaiting();
 cleanupOutdatedCaches();
@@ -14,19 +13,16 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 // ── Runtime caching (mirrors the previous generateSW config) ─────────────────
 
-// 1. Never cache the backend / API — always hit the network, with background
-//    sync so queued writes (e.g. placing an order while offline) retry later.
-const orderQueueSync = new BackgroundSyncPlugin("order-queue", { maxRetentionTime: 24 * 60 });
-
+// 1. Never cache the backend / API — always hit the network.
+//    IMPORTANT: only intercept GET here. Routing POST/PUT/PATCH through the
+//    service worker (even with NetworkOnly) forces Workbox to clone/read the
+//    request body, which corrupts multipart file uploads (confirmed: photo
+//    uploads failed with "Unexpected end of form" until this was removed).
+//    Un-intercepted POST requests just go straight to the network as normal.
 registerRoute(
   ({ url }) => url.hostname.includes("kivo-backend-9h1x.onrender.com") || url.pathname.startsWith("/api/"),
-  new NetworkOnly({ plugins: [orderQueueSync] }),
+  new NetworkOnly(),
   "GET"
-);
-registerRoute(
-  ({ url }) => url.hostname.includes("kivo-backend-9h1x.onrender.com") || url.pathname.startsWith("/api/"),
-  new NetworkOnly({ plugins: [orderQueueSync] }),
-  "POST"
 );
 
 // 2. Mapbox tiles
